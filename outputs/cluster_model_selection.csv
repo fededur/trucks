@@ -1,0 +1,13 @@
+"island","feature_set","features","k","average_silhouette"
+"North Island","geography","latitude + longitude",10,0.816976763927348
+"North Island","geography","latitude + longitude",7,0.798868358694589
+"North Island","geography","latitude + longitude",9,0.795582938512419
+"North Island","geography","latitude + longitude",8,0.769475414807758
+"North Island","geography","latitude + longitude",6,0.766670507997806
+"North Island","geography","latitude + longitude",5,0.753640436376908
+"North Island","geography","latitude + longitude",4,0.697313653814991
+"North Island","geography","latitude + longitude",2,0.652246331174543
+"North Island","geography","latitude + longitude",3,0.649969153578613
+"South Island","geography","latitude + longitude",4,0.878097019653632
+"South Island","geography","latitude + longitude",3,0.770749982415531
+"South Island","geography","latitude + longitude",2,0.770269824951616

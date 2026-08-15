@@ -1,0 +1,25 @@
+# R and RStudio local state
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# R package environments and caches
+renv/library/
+renv/staging/
+packrat/lib*/
+packrat/src/
+.quarto/
+*_cache/
+*_files/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Private operational input data (generated example outputs remain tracked)
+data/trucks_input.csv
+
+# Temporary files
+*.tmp
+*.log

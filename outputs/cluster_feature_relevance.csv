@@ -1,0 +1,7 @@
+"island","variable","relevance","selected_for_clustering"
+"North Island","latitude",0.997196363940411,TRUE
+"North Island","longitude",0.985443887519241,TRUE
+"North Island","cargo_t",0.0534592150845132,FALSE
+"South Island","longitude",0.991020626034776,TRUE
+"South Island","latitude",0.925503428928983,TRUE
+"South Island","cargo_t",0.0809671292935211,FALSE
