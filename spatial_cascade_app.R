@@ -114,7 +114,11 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
           raw * protection * barrier[target, active]))
         combined_probability <- 1 - prod(1 - source_probability)
         if (runif(1) <= combined_probability) {
-          successful_source <- sample(active, 1L, prob = source_probability)
+          # sample() treats a single numeric value as 1:value. Sample the
+          # position instead so one active farm remains one valid source.
+          successful_source <- active[
+            sample.int(length(active), 1L, prob = source_probability)
+          ]
           state[target] <- "B"
           reached_day[target] <- day
           parent[target] <- successful_source
