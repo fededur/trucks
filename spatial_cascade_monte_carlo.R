@@ -12,6 +12,8 @@ MONTE_CARLO_RUNS <- config$simulation_controls$monte_carlo_iterations
 POPULATION_SIZE <- config$model_parameters$population_size
 SIM_DURATION <- config$model_parameters$simulation_days
 LAMBDA <- config$model_parameters$spatial_decay_factor
+CROSS_BARRIER_MULTIPLIER <-
+  config$model_parameters$cross_barrier_transmission_multiplier %||% 0
 COOLDOWN_PHASE_B <- config$model_parameters$incubation_period_days
 COOLDOWN_PHASE_C <- config$model_parameters$active_period_days
 BASE_YIELD <- config$production_metrics$average_bird_yield
@@ -45,6 +47,11 @@ assert_number <- function(x, name, lower = -Inf, integer = FALSE) {
 assert_number(MONTE_CARLO_RUNS, "monte_carlo_iterations", 1, TRUE)
 assert_number(SIM_DURATION, "simulation_days", 1, TRUE)
 assert_number(LAMBDA, "spatial_decay_factor", 0)
+assert_number(CROSS_BARRIER_MULTIPLIER,
+              "cross_barrier_transmission_multiplier", 0)
+if (CROSS_BARRIER_MULTIPLIER > 1) {
+  stop("cross_barrier_transmission_multiplier must be between 0 and 1.")
+}
 assert_number(COOLDOWN_PHASE_B, "incubation_period_days", 1, TRUE)
 assert_number(COOLDOWN_PHASE_C, "active_period_days", 1, TRUE)
 assert_number(PROT_EFFICIENCY, "barn_protection_efficiency", 0)
@@ -81,12 +88,15 @@ if (anyNA(farms) || any(farms$production_yield < 0)) stop("Farm data contain inv
 POPULATION_SIZE <- nrow(farms)
 if (POPULATION_SIZE < 3L || INITIAL_PHASE_C > POPULATION_SIZE) stop("Invalid fixed farm population size.")
 
-# Fixed distances are computed once. Barrier groups prevent island crossings.
+# Fixed distances are computed once. Barrier pairs receive the configurable
+# multiplier: 0 blocks crossings, values between 0 and 1 penalise them, and 1
+# removes the barrier effect.
 distance_km <- matrix(haversine_distance(
   rep(farms$lon, times = POPULATION_SIZE), rep(farms$lat, times = POPULATION_SIZE),
   rep(farms$lon, each = POPULATION_SIZE), rep(farms$lat, each = POPULATION_SIZE)
 ), nrow = POPULATION_SIZE)
 same_group <- outer(farms$barrier_group, farms$barrier_group, `==`)
+barrier_multiplier <- ifelse(same_group, 1, CROSS_BARRIER_MULTIPLIER)
 
 set.seed(as.integer(RANDOM_SEED))
 if (START_MODE == "random") {
@@ -118,11 +128,11 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
     if (length(active) && length(targets)) {
       new_b <- integer()
       for (target in targets) {
-        sources <- active[same_group[target, active]]
-        if (!length(sources)) next
+        sources <- active
         raw <- exp(-LAMBDA * distance_km[target, sources])
         protection <- if (farms$is_sheltered[target]) 1 - PROT_EFFICIENCY else 1
-        final_probability <- 1 - prod(1 - pmin(1, pmax(0, raw * protection)))
+        adjusted <- raw * protection * barrier_multiplier[target, sources]
+        final_probability <- 1 - prod(1 - pmin(1, pmax(0, adjusted)))
         if (runif(1) <= final_probability) new_b <- c(new_b, target)
       }
       if (length(new_b)) { state[new_b] <- "B"; timer_b[new_b] <- 0L }
@@ -220,7 +230,8 @@ survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = pro
   scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Protection") + scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04))) +
   labs(title = paste("Average final", PHASE_A_LABEL, "rate"), subtitle = "Fixed farms, split by production type and shelter", x = PRODUCTION_TYPE_LABEL, y = SURVIVAL_AXIS_LABEL) + report_theme + theme(legend.position = "top")
 farm_risk_plot <- ggplot(farm_risk, aes(lon, lat, colour = probability_lost_pct, size = production_yield)) +
-  geom_point(alpha = .82) + facet_wrap(~barrier_group, scales = "free") + scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
+  geom_point(alpha = .82) + coord_quickmap() +
+  scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
   scale_size_area(max_size = 6, name = "Production") + labs(title = "Farm-level probability of reaching the lost state", subtitle = "Conditional on the configured starting-location mode", x = "Longitude", y = "Latitude") + report_theme + theme(legend.position = "right")
 
 plots <- list(spatial_cascade_loss_distribution = loss_plot,

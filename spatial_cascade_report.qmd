@@ -61,8 +61,8 @@ selected according to `starting_location_mode` in `config.json`.
   comparison of which origin creates the largest cascade.
 
 Transmission outcomes then vary randomly for `r days` days. Distances and farm
-attributes remain fixed. Farms in different barrier groups cannot transmit to
-each other.
+attributes remain fixed. The model applies the configured transmission penalty
+when the source and target farms are in different barrier groups.
 
 The four farm states are:
 
@@ -171,8 +171,20 @@ estimate.
 
 ![](assets/spatial_cascade_farm_risk_map.svg){fig-alt="Fixed farm locations coloured by probability of reaching the lost state"}
 
-The map and `assets/spatial_cascade_farm_risk.csv` provide the new farm-level
-view. For every farm they report:
+The map shows both North and South Island farms together, without separate
+panels. **Each point is one fixed farm** at its actual longitude and latitude.
+Point size represents that farm's production capacity. Point colour represents
+the percentage of all Monte Carlo runs in which that farm reached **Lost
+production capacity** by the end of the scenario.
+
+For example, a value of 40% means that the farm reached the lost state in 40
+out of every 100 simulated scenarios under the current settings and starting
+location method. It does not mean the farm is certain to lose 40% of its own
+production, and it is not a forecast that an event will occur. It is a
+scenario-based exposure measure: a high value identifies a farm that is often
+reached when many possible cascades are tested.
+
+The map and `assets/spatial_cascade_farm_risk.csv` report for every farm:
 
 - how often it was selected as a starting farm;
 - probability of being affected;
@@ -188,12 +200,37 @@ is selected about
 times on average, but the actual count varies. Use `each_farm` mode for balanced
 origin comparisons.
 
+## Controlling transmission between islands
+
+The model uses the `barrier_group` field in the fixed farm table. In the
+current data this field is the island. Transmission within the same island has
+no extra penalty. Transmission between different islands is multiplied by
+`cross_barrier_transmission_multiplier` from `config.json`, after the normal
+distance decay and shelter protection are applied.
+
+The current value is **`r config$model_parameters$cross_barrier_transmission_multiplier`**,
+so cross-island transmission is blocked. This means the model was already
+keeping island cascades separate; the new setting simply makes that assumption
+visible and controllable.
+
+- `0` blocks transmission between islands.
+- `0.05` retains 5% of the otherwise calculated transmission probability.
+- `1` applies no extra island penalty, although geographic distance still
+  reduces the probability.
+
+Use a small value above zero only when there is a credible cross-island route,
+such as ferry movements, shared equipment or supplier links. This single
+multiplier is a planning simplification. For operational work, known movement
+routes and biosecurity controls should be represented directly where data are
+available.
+
 ## How to use it
 
 1. Replace or edit `data/farms.csv`.
 2. Update `input_data.column_mappings` in `config.json` if column names differ.
 3. Choose `random` or `each_farm` starting-location mode.
-4. Set phase durations, spatial decay, protection efficiency, days and runs.
+4. Set phase durations, spatial decay, the cross-barrier multiplier, protection
+   efficiency, days and runs.
 5. Run `source("spatial_cascade_monte_carlo.R")`.
 6. Review the charts and CSV files in `assets/`.
 7. Render this report with `quarto render spatial_cascade_report.qmd`.

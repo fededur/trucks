@@ -35,6 +35,7 @@
     "population_size": 150,
     "simulation_days": 60,
     "spatial_decay_factor": 0.025,
+    "cross_barrier_transmission_multiplier": 0.0,
     "incubation_period_days": 4,
     "active_period_days": 8
   },

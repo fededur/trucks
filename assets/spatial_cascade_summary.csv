@@ -1,2 +1,2 @@
 "scenario","monte_carlo_runs","population_size","population_size_source","starting_location_mode","mean_production_loss","median_production_loss","loss_p05","loss_p95","sheltered_survival_pct","unsheltered_survival_pct","protection_benefit_percentage_points"
-"New Zealand Spatial Production Risk",500,150,"fixed table data/farms.csv","random",124697.89992459,123974.954778717,113673.834011589,149846.797457096,16.3746478873239,17.7620253164557,-1.38737742913175
+"New Zealand Spatial Production Risk",500,150,"fixed table data/farms.csv","random",124478.453477505,123974.954778717,113673.834011589,149846.797457096,16.5718309859155,17.9215189873418,-1.34968800142628
