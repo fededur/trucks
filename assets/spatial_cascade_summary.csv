@@ -1,0 +1,2 @@
+"scenario","monte_carlo_runs","mean_production_loss","median_production_loss","loss_p05","loss_p95","sheltered_survival_pct","unsheltered_survival_pct","protection_benefit_percentage_points"
+"New Zealand Spatial Production Risk",500,61836.1922313246,63240.7378292518,25639.2147999187,94999.6608582803,61.0617647058824,46.5609756097561,14.5007890961263

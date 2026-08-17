@@ -27,6 +27,8 @@ North and South Island trucks are always kept separate.
 - `data/trucks_clustered.rds` — stable clustered data loaded by the app
 - `spatial_cascade_monte_carlo.R` — generic spatial cascade Monte Carlo engine
 - `config.json` — external parameters and labels for the cascade engine
+- `spatial_cascade_report.qmd` — short method and results report
+- `assets/` — saved ggplot charts and reusable simulation results
 
 ## Required R packages
 
@@ -69,9 +71,9 @@ source("spatial_cascade_monte_carlo.R")
 
 Edit `config.json` to change the scenario, population, spatial bounds, phase
 durations, protection settings, production value, and Monte Carlo run count.
-Every run generates a new random geographic layout. The script displays a loss
-distribution and compares final Phase A survival for sheltered and unsheltered
-nodes using base R graphics.
+Every run generates a new random geographic layout. The script saves ggplot2
+SVG charts showing the loss distribution and sheltered versus unsheltered final
+Phase A survival under `assets/`.
 
 ## Use another dataset
 

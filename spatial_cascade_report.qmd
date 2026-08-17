@@ -1,0 +1,126 @@
+---
+title: "Spatial Cascade Monte Carlo Analysis"
+subtitle: "Method, use and strategic results"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    theme: cosmo
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+config <- jsonlite::fromJSON("config.json")
+results <- readRDS("assets/spatial_cascade_results.rds")
+summary <- read.csv("assets/spatial_cascade_summary.csv")
+
+population <- config$model_parameters$population_size
+runs <- config$simulation_controls$monte_carlo_iterations
+days <- config$model_parameters$simulation_days
+allocation <- 100 * config$housing_attributes$barn_allocation_rate
+protection <- 100 * config$housing_attributes$barn_protection_efficiency
+total_average_capacity <- population *
+  config$production_metrics$average_bird_yield
+mean_loss_share <- 100 * summary$mean_production_loss / total_average_capacity
+```
+
+## Purpose
+
+This model tests how a problem can spread through a spatial network and reduce
+production capacity. The current configuration uses poultry and barn language,
+but the same engine can represent farms, utilities, financial networks or urban
+assets by changing `config.json`.
+
+The model is useful for comparing protection strategies and understanding the
+range of plausible outcomes. It is not a forecast for a specific real event.
+
+## How the model works
+
+Each simulation creates `r population` nodes at new random locations. Three
+nodes begin in the active state. The model then runs for `r days` days.
+
+Every node moves through four stages:
+
+1. **`r config$scenario_metadata$phase_a_label`** — not affected.
+2. **`r config$scenario_metadata$phase_b_label`** — affected but not yet active.
+3. **`r config$scenario_metadata$phase_c_label`** — able to affect nearby nodes.
+4. **`r config$scenario_metadata$phase_d_label`** — its production value is
+   counted as lost.
+
+Risk falls as geographic distance increases. Sheltered nodes receive the
+configured protection reduction. The simulation is repeated `r runs` times,
+with a new geographic layout each time, so the results show a range rather than
+one fixed answer.
+
+## Results
+
+![](assets/spatial_cascade_loss_distribution.svg){fig-alt="Distribution of production capacity lost across Monte Carlo runs"}
+
+Average lost production capacity was **`r format(round(summary$mean_production_loss), big.mark = ",")`**, or about
+**`r round(mean_loss_share, 1)`%** of the population's expected starting
+capacity. The middle 90% of simulated outcomes ranged from
+**`r format(round(summary$loss_p05), big.mark = ",")`** to
+**`r format(round(summary$loss_p95), big.mark = ",")`**.
+
+The spread of the histogram is strategically important: one average number does
+not capture the risk. Planning should allow for outcomes toward the upper end,
+not only the centre of the distribution.
+
+![](assets/spatial_cascade_survival_comparison.svg){fig-alt="Average final survival comparison for sheltered and unsheltered nodes"}
+
+Sheltered nodes finished unaffected in
+**`r round(summary$sheltered_survival_pct, 1)`%** of cases on average, compared
+with **`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered nodes.
+The protection difference was therefore
+**`r round(summary$protection_benefit_percentage_points, 1)` percentage
+points**.
+
+Under the current assumptions, sheltering materially reduces exposure. The
+strategic question is whether that improvement justifies the cost of increasing
+the current `r round(allocation)`% allocation rate. That decision should be
+tested with realistic protection costs and real locations before operational
+use.
+
+## How to use it
+
+1. Edit `config.json`.
+2. Set the scenario labels, population, duration, spatial decay, phase timing,
+   node value, allocation rate, protection efficiency and map bounds.
+3. Run:
+
+```{r}
+#| eval: false
+source("spatial_cascade_monte_carlo.R")
+```
+
+4. Review the SVG charts and summary files in `assets/`.
+5. Render this report after the simulation finishes:
+
+```bash
+quarto render spatial_cascade_report.qmd
+```
+
+For quick testing, reduce `monte_carlo_iterations`. Use several hundred or more
+runs for a stable strategic comparison.
+
+## What matters most
+
+- **Distance decay** controls how local or widespread the cascade becomes.
+- **Phase timing** controls how quickly it grows and how long nodes remain
+  active.
+- **Protection efficiency and allocation** determine how much of the population
+  receives a reduced risk.
+- **Geographic layout** creates uncertainty, which is why the model reports a
+  distribution rather than one answer.
+
+## Limits
+
+The current locations are random within a bounding box, not actual farm or
+network locations. Transmission uses direct geographic distance and does not
+include roads, terrain, prevailing wind, operating dependencies or response
+actions. Replace these assumptions before treating the output as a real-world
+risk estimate.

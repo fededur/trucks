@@ -1,4 +1,5 @@
 library(jsonlite)
+library(ggplot2)
 config <- fromJSON("config.json", simplifyVector = TRUE)
 `%||%` <- function(value, fallback) {
   if (is.null(value) || length(value) == 0L || is.na(value[1])) fallback else value
@@ -7,7 +8,8 @@ config <- fromJSON("config.json", simplifyVector = TRUE)
 # Spatial Cascading State-Transition Monte Carlo Engine ----------------------
 # Generic A -> B -> C -> D state engine. Domain meaning, durations, spatial
 # extent, production value and protective attributes are supplied by JSON.
-# This script intentionally depends only on jsonlite and base R.
+# The simulation uses jsonlite for configuration, ggplot2 for presentation,
+# and otherwise relies on base R.
 
 # ---- Required parameter mapping --------------------------------------------
 MONTE_CARLO_RUNS <- config$simulation_controls$monte_carlo_iterations
@@ -231,53 +233,120 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
   }
 }
 
-# ---- Base R output and visualisation ----------------------------------------
+# ---- Results and ggplot2 visualisation --------------------------------------
 average_survival <- c(
   mean(sheltered_survival_log, na.rm = TRUE),
   mean(unsheltered_survival_log, na.rm = TRUE)
 )
 names(average_survival) <- c(SHELTERED_LABEL, UNSHELTERED_LABEL)
 
-old_par <- par(no.readonly = TRUE)
-on.exit(par(old_par), add = TRUE)
-layout(matrix(c(1, 2), nrow = 1L), widths = c(1.15, 0.85))
-par(mar = c(5, 5, 4, 2) + 0.1)
-
-hist(
-  production_loss_log,
-  breaks = "FD",
-  col = "#2A788E",
-  border = "white",
-  main = paste(SCENARIO_NAME, "\nMonte Carlo loss distribution"),
-  xlab = VALUE_AXIS_LABEL,
-  ylab = "Monte Carlo run frequency"
-)
-grid(col = grDevices::adjustcolor("#566573", alpha.f = 0.18))
-
-bar_positions <- barplot(
-  average_survival,
-  col = c("#3B9AB2", "#F21A00"),
-  border = NA,
-  ylim = c(0, 100),
-  main = paste("Average final", PHASE_A_LABEL, "rate"),
-  ylab = SURVIVAL_AXIS_LABEL,
-  las = 1
-)
-abline(h = seq(0, 100, by = 20),
-       col = grDevices::adjustcolor("#566573", alpha.f = 0.18), lty = 3)
-text(
-  x = bar_positions,
-  y = pmin(98, average_survival + 3),
-  labels = sprintf("%.1f%%", average_survival),
-  font = 2
-)
-
-invisible(list(
+simulation_results <- list(
   scenario = SCENARIO_NAME,
+  configuration = config,
   production_loss_log = production_loss_log,
   sheltered_survival_log = sheltered_survival_log,
   unsheltered_survival_log = unsheltered_survival_log,
   average_survival = average_survival,
   phase_labels = c(A = PHASE_A_LABEL, B = PHASE_B_LABEL,
                    C = PHASE_C_LABEL, D = PHASE_D_LABEL)
-))
+)
+
+assets_dir <- "assets"
+if (!dir.exists(assets_dir)) dir.create(assets_dir, recursive = TRUE)
+saveRDS(simulation_results,
+        file.path(assets_dir, "spatial_cascade_results.rds"))
+
+loss_data <- data.frame(production_loss = production_loss_log)
+survival_data <- data.frame(
+  protection_group = factor(
+    names(average_survival), levels = names(average_survival)
+  ),
+  survival_rate = as.numeric(average_survival)
+)
+
+professional_theme <- theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", colour = "#173B57"),
+    plot.subtitle = element_text(colour = "#526575"),
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none"
+  )
+
+loss_plot <- ggplot(loss_data, aes(x = production_loss)) +
+  geom_histogram(
+    bins = max(12L, as.integer(round(sqrt(MONTE_CARLO_RUNS)))),
+    fill = "#2A788E", colour = "white", linewidth = 0.25
+  ) +
+  geom_vline(
+    xintercept = mean(production_loss_log),
+    colour = "#E76F51", linewidth = 1, linetype = "dashed"
+  ) +
+  labs(
+    title = paste(SCENARIO_NAME, "loss distribution"),
+    subtitle = sprintf(
+      "%s Monte Carlo runs; dashed line shows the average outcome",
+      format(MONTE_CARLO_RUNS, big.mark = ",")
+    ),
+    x = VALUE_AXIS_LABEL,
+    y = "Number of simulation runs"
+  ) +
+  scale_x_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE)) +
+  professional_theme
+
+survival_plot <- ggplot(
+  survival_data,
+  aes(x = protection_group, y = survival_rate, fill = protection_group)
+) +
+  geom_col(width = 0.62) +
+  geom_text(
+    aes(label = sprintf("%.1f%%", survival_rate)),
+    vjust = -0.5, fontface = "bold", colour = "#173B57"
+  ) +
+  scale_fill_manual(values = c("#3B9AB2", "#F28E2B")) +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 20),
+                     expand = expansion(mult = c(0, 0.04))) +
+  labs(
+    title = paste("Average final", PHASE_A_LABEL, "rate"),
+    subtitle = paste("Comparison by protective attribute across",
+                     format(MONTE_CARLO_RUNS, big.mark = ","), "runs"),
+    x = NULL,
+    y = SURVIVAL_AXIS_LABEL
+  ) +
+  professional_theme
+
+ggsave(
+  file.path(assets_dir, "spatial_cascade_loss_distribution.svg"),
+  loss_plot, device = grDevices::svg, width = 9, height = 6, units = "in",
+  bg = "white"
+)
+ggsave(
+  file.path(assets_dir, "spatial_cascade_survival_comparison.svg"),
+  survival_plot, device = grDevices::svg, width = 8, height = 6, units = "in",
+  bg = "white"
+)
+
+summary_table <- data.frame(
+  scenario = SCENARIO_NAME,
+  monte_carlo_runs = MONTE_CARLO_RUNS,
+  mean_production_loss = mean(production_loss_log),
+  median_production_loss = median(production_loss_log),
+  loss_p05 = unname(quantile(production_loss_log, 0.05)),
+  loss_p95 = unname(quantile(production_loss_log, 0.95)),
+  sheltered_survival_pct = unname(average_survival[1]),
+  unsheltered_survival_pct = unname(average_survival[2]),
+  protection_benefit_percentage_points =
+    unname(average_survival[1] - average_survival[2]),
+  stringsAsFactors = FALSE
+)
+write.csv(summary_table,
+          file.path(assets_dir, "spatial_cascade_summary.csv"),
+          row.names = FALSE)
+
+if (interactive()) {
+  print(loss_plot)
+  print(survival_plot)
+}
+
+invisible(simulation_results)
