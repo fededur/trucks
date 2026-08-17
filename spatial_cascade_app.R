@@ -193,13 +193,24 @@ ui <- fluidPage(
       border-left-color:#E76F51; }
     #cascade_map { height:clamp(390px,calc(100vh - 285px),620px) !important; }
     .legend-note { font-size:10px; color:#687985; margin-top:5px; }
+    .nav-tabs { margin-bottom:8px; }
+    .nav-tabs>li>a { color:#31536a; font-weight:700; padding:7px 14px; }
+    .nav-tabs>li.active>a { color:#167d8d; }
+    .about-wrap { max-width:1000px; margin:0 auto 20px; }
+    .about-card { background:white; border-radius:8px; padding:16px 20px;
+      margin-bottom:10px; box-shadow:0 2px 8px rgba(27,54,78,.10); }
+    .about-card h3 { color:#173b57; font-size:18px; margin:0 0 8px; }
+    .about-card h4 { color:#167d8d; font-size:14px; margin:12px 0 5px; }
+    .about-card p, .about-card li { line-height:1.5; }
     @media(max-width:900px) { .kpi-grid { grid-template-columns:repeat(2,1fr); }
       #cascade_map { height:480px !important; } }
   "))),
   div(class = "app-title",
       h2("Fixed-Farm Spatial Cascade Explorer"),
       div("Choose starting farms and inspect how a single loss chain develops")),
-  sidebarLayout(
+  tabsetPanel(id = "app_tab",
+    tabPanel("Explore scenario",
+      sidebarLayout(
     sidebarPanel(width = 3, class = "control-card",
       h4("Scenario controls"),
       selectInput("start_ids", "Starting farm(s)", choices = farm_choices,
@@ -252,6 +263,46 @@ ui <- fluidPage(
       ),
       uiOutput("loss_cards"),
       div(class = "panel-card", leafletOutput("cascade_map"))
+    ))),
+    tabPanel("About the app",
+      div(class = "about-wrap",
+        div(class = "about-card",
+          h3("What this app is for"),
+          p("This app shows how a harmful event could move between a fixed set of New Zealand farms. It helps you compare possible starting points, transmission settings and a culling response."),
+          p("It is a scenario explorer, not a forecast. One run shows one possible chain under the settings you choose.")),
+        div(class = "about-card",
+          h3("How the model works"),
+          p("Each dot is one farm from the project data. Its location, production type, shelter status and production capacity stay fixed."),
+          tags$ul(
+            tags$li(tags$b("Unaffected: "), "the farm has not been reached."),
+            tags$li(tags$b("Incubating: "), "the farm has been reached but cannot yet spread the event."),
+            tags$li(tags$b("Active: "), "the farm can spread the event to other farms."),
+            tags$li(tags$b("Lost: "), "the farm's production capacity is counted as lost.")),
+          p("Nearby farms are more likely to be reached than distant farms. Shelter lowers the chance that a farm is reached. North-to-South Island spread is controlled separately by the cross-island setting.")),
+        div(class = "about-card",
+          h3("How culling works"),
+          p("Choose Cull to apply a response after a farm becomes active. A culled farm stops spreading immediately, but all of its production capacity is counted as lost."),
+          tags$ul(
+            tags$li(tags$b("Farms covered by policy "), "is the share of active farms the response programme can reach."),
+            tags$li(tags$b("Response delay "), "is the number of days between a farm becoming active and being culled.")),
+          p("A faster response can reduce onward spread. Wider coverage can reach more active farms. Both may also increase the production directly lost through culling, so compare the result with the None setting.")),
+        div(class = "about-card",
+          h3("How to use the app"),
+          tags$ol(
+            tags$li("Select one or more starting farms."),
+            tags$li("Set the scenario duration and transmission assumptions."),
+            tags$li("Choose None for a baseline, or Cull and set its coverage and delay."),
+            tags$li("Choose a random seed. Reuse the same seed when comparing settings."),
+            tags$li("Select Run scenario."),
+            tags$li("Move the day slider to see how the chain develops.")),
+          h4("Reading the map"),
+          p("Red farms start the scenario, yellow farms join the transmission chain, and grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
+          h4("Reading the figures"),
+          p("The cards show farms reached, farms lost, farms culled, total national capacity lost, and losses by production type. Loss includes farms that naturally reach the lost state and farms removed through culling.")),
+        div(class = "about-card",
+          h3("Important limits"),
+          p("The result depends on the data and settings supplied. Straight-line distance does not describe every real pathway, such as animal movements, shared workers, vehicles or equipment. Use the app to compare scenarios and support discussion, not as a stand-alone operational decision."))
+      )
     )
   )
 )
