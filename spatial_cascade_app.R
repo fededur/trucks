@@ -325,7 +325,7 @@ ui <- fluidPage(
             tags$li("Select Run scenario."),
             tags$li("Move the day slider to see how the chain develops.")),
           h4("Reading the map"),
-          p("Red farms start the scenario, yellow farms join the transmission chain, and grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
+          p("Red farms are initially affected at the start of the scenario. Yellow farms become affected as the event spreads. Grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
           h4("Reading the figures"),
           p("The cards show farms reached, farms lost, farms culled, total national capacity lost, and losses by production type. Loss includes farms that naturally reach the lost state and farms removed through culling.")),
         div(class = "about-card",
@@ -359,9 +359,9 @@ server <- function(input, output, session) {
     result <- scenario()
     day <- min(input$display_day, input$duration)
     result$display_group <- ifelse(
-      result$is_start, "Initiating farm",
+      result$is_start, "Initially affected",
       ifelse(!is.na(result$reached_day) & result$reached_day <= day,
-             "In transmission chain", "Not affected"))
+             "Affected", "Not affected"))
     result$lost_by_day <- !is.na(result$lost_day) & result$lost_day <= day
     result
   })
@@ -419,8 +419,8 @@ server <- function(input, output, session) {
   output$cascade_map <- renderLeaflet({
     result <- day_view()
     day <- min(input$display_day, input$duration)
-    colours <- c("Initiating farm" = "#E76F51",
-                 "In transmission chain" = "#F2B134",
+    colours <- c("Initially affected" = "#E76F51",
+                 "Affected" = "#F2B134",
                  "Not affected" = "#7B8790")
     map <- leaflet(options = leafletOptions(zoomControl = TRUE,
                                              minZoom = 4)) |>
