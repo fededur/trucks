@@ -167,6 +167,9 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
 farm_choices <- setNames(farms$id, paste(farms$id, farms$region,
                                           farms$production_type, sep = " | "))
 default_lambda <- config$model_parameters$spatial_decay_factor
+help_label <- function(text, note) {
+  tags$span(text, class = "parameter-label", title = note)
+}
 
 ui <- fluidPage(
   tags$head(tags$style(HTML("
@@ -183,6 +186,7 @@ ui <- fluidPage(
     .control-card h4 { margin:2px 0 8px; font-size:15px; }
     .control-card .form-group { margin-bottom:8px; }
     .control-card .control-label { font-size:11px; margin-bottom:2px; }
+    .parameter-label { cursor:help; border-bottom:1px dotted #6f818d; }
     .btn-primary { background:#e57b25; border-color:#d66d18; font-weight:700; }
     .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
     .loss-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -217,36 +221,48 @@ ui <- fluidPage(
       sidebarLayout(
     sidebarPanel(width = 3, class = "control-card",
       h4("Scenario controls"),
-      selectInput("start_ids", "Starting farm(s)", choices = farm_choices,
+      selectInput("start_ids", help_label("Starting farm(s)",
+        "The farm or farms where the scenario begins. Select more than one to test several starting points at the same time."), choices = farm_choices,
                   selected = farms$id[1], multiple = TRUE, selectize = TRUE),
-      sliderInput("display_day", "Display state on day", min = 0,
+      sliderInput("display_day", help_label("Display state on day",
+        "Moves the map through the completed scenario. It changes the day shown, but does not rerun the model."), min = 0,
                   max = config$model_parameters$simulation_days,
                   value = config$model_parameters$simulation_days, step = 1),
-      numericInput("duration", "Scenario duration (days)",
+      numericInput("duration", help_label("Scenario duration (days)",
+        "The number of days modelled. A longer period gives a transmission chain more time to develop."),
                    config$model_parameters$simulation_days, min = 1, max = 365),
-      numericInput("lambda", "Spatial decay factor", default_lambda,
+      numericInput("lambda", help_label("Spatial decay factor",
+        "Controls how quickly transmission probability falls with distance. A larger value makes long-distance spread less likely."), default_lambda,
                    min = 0, max = 1, step = .005),
-      numericInput("incubation", "Incubation period (days)",
+      numericInput("incubation", help_label("Incubation period (days)",
+        "Days between a farm being reached and becoming able to spread to other farms."),
                    config$model_parameters$incubation_period_days, min = 1),
-      numericInput("active_period", "Active period (days)",
+      numericInput("active_period", help_label("Active period (days)",
+        "Days an active farm can spread before its production capacity moves to the lost state."),
                    config$model_parameters$active_period_days, min = 1),
-      sliderInput("protection", "Shelter protection efficiency", min = 0,
+      sliderInput("protection", help_label("Shelter protection efficiency",
+        "Reduces the chance that a sheltered farm is reached. Zero gives no protection; one gives full protection under this model."), min = 0,
                   max = 1, value = config$housing_attributes$barn_protection_efficiency,
                   step = .05),
-      sliderInput("island_multiplier", "Cross-island transmission multiplier",
+      sliderInput("island_multiplier", help_label("Cross-island transmission multiplier",
+        "Adds an island barrier after distance is considered. Zero blocks cross-island spread; one applies no extra island penalty."),
                   min = 0, max = 1,
                   value = config$model_parameters$cross_barrier_transmission_multiplier,
                   step = .01),
-      radioButtons("control_strategy", "Spread-control policy",
+      radioButtons("control_strategy", help_label("Spread-control policy",
+        "None shows the baseline. Cull removes covered active farms from transmission but counts their production as lost."),
         choices = c("None" = "none", "Cull" = "cull"),
         selected = "none", inline = TRUE),
       conditionalPanel("input.control_strategy == 'cull'",
-        sliderInput("control_coverage", "Farms covered by policy", min = 0,
+        sliderInput("control_coverage", help_label("Farms covered by policy",
+          "The share of active farms the culling programme can reach. Selection is random within each scenario."), min = 0,
                     max = 1, value = .8, step = .05),
-        numericInput("response_delay", "Response delay after active (days)",
+        numericInput("response_delay", help_label("Response delay after active (days)",
+          "Days between a covered farm becoming active and being culled. A shorter delay stops onward spread sooner."),
                      value = 1, min = 0, max = 60, step = 1)
       ),
-      numericInput("seed", "Random seed", config$simulation_controls$random_seed,
+      numericInput("seed", help_label("Random seed",
+        "Fixes the random choices in a run. Use the same seed when comparing policies so differences are easier to interpret."), config$simulation_controls$random_seed,
                    min = 1, step = 1),
       actionButton("run", "Run scenario", class = "btn-primary btn-block"),
       div(class = "legend-note",
