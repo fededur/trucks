@@ -25,7 +25,10 @@ North and South Island trucks are always kept separate.
 - `truck_analysis_report.qmd` — plain-language Quarto report
 - `truck_analysis_report.html` — rendered self-contained report
 - `data/trucks_clustered.rds` — stable clustered data loaded by the app
-- `spatial_cascade_monte_carlo.R` — generic spatial cascade Monte Carlo engine
+- `spatial_cascade_monte_carlo.R` — fixed-population spatial cascade engine
+- `spatial_cascade_random_geography_legacy.R` — preserved random-layout version
+- `create_fixed_farm_population.R` — rebuilds the example fixed farm table
+- `data/farms.csv` — fixed farm population used by the cascade model
 - `config.json` — external parameters and labels for the cascade engine
 - `spatial_cascade_report.qmd` — short method and results report
 - `assets/` — saved ggplot charts and reusable simulation results
@@ -79,9 +82,9 @@ use the number of rows in a farm dataset, set
 `input_data.use_row_count_for_population_size` to `true` and save the CSV at the
 configured `input_data.file` path. Only its row count is used; the Monte Carlo
 engine still generates new random coordinates and attributes for every run.
-Every run generates a new random geographic layout. The script saves ggplot2
-SVG charts showing the loss distribution and sheltered versus unsheltered final
-Phase A survival under `assets/`.
+Every run uses the same farm geography and attributes. Randomness comes from
+the event origin and transmission outcomes. The script saves population,
+production-type and farm-level risk results under `assets/`.
 
 ## Use another dataset
 

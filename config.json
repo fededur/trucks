@@ -14,11 +14,22 @@
   "simulation_controls": {
     "monte_carlo_iterations": 500,
     "random_seed": 2026,
-    "initial_phase_c_entities": 3
+    "initial_phase_c_entities": 3,
+    "starting_location_mode": "random",
+    "iterations_per_starting_farm": 25
   },
   "input_data": {
-    "use_row_count_for_population_size": false,
-    "file": "data/farms_input.csv"
+    "file": "data/farms.csv",
+    "column_mappings": {
+      "id": "farm_id",
+      "lon": "longitude",
+      "lat": "latitude",
+      "barrier_group": "island",
+      "region": "region",
+      "production_type": "production_type",
+      "is_sheltered": "is_sheltered",
+      "production_yield": "production_yield"
+    }
   },
   "model_parameters": {
     "population_size": 150,

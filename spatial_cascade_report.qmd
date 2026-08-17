@@ -1,5 +1,5 @@
 ---
-title: "Spatial Cascade Monte Carlo Analysis"
+title: "Fixed-Farm Spatial Cascade Analysis"
 subtitle: "Method, use and strategic results"
 format:
   html:
@@ -17,239 +17,191 @@ execute:
 config <- jsonlite::fromJSON("config.json")
 results <- readRDS("assets/spatial_cascade_results.rds")
 summary <- read.csv("assets/spatial_cascade_summary.csv")
-type_summary <- read.csv("assets/spatial_cascade_production_type_summary.csv")
-
-population <- results$population_size
-population_source <- results$population_size_source
-runs <- config$simulation_controls$monte_carlo_iterations
+types <- read.csv("assets/spatial_cascade_production_type_summary.csv")
+farms <- results$farms
+runs <- results$monte_carlo_runs
 days <- config$model_parameters$simulation_days
-allocation <- 100 * config$housing_attributes$barn_allocation_rate
-protection <- 100 * config$housing_attributes$barn_protection_efficiency
-type_mix <- paste(
-  paste0(config$production_metrics$production_types$type, " ",
-         round(100 * config$production_metrics$production_types$allocation_rate), "%"),
-  collapse = ", "
-)
-total_average_capacity <- population *
-  config$production_metrics$average_bird_yield
-mean_loss_share <- 100 * summary$mean_production_loss / total_average_capacity
+mean_loss_share <- 100 * summary$mean_production_loss /
+  sum(farms$production_yield)
+protection_difference <- summary$protection_benefit_percentage_points
 ```
 
-## Purpose
+## Practical purpose
 
-This report uses poultry farms as the practical example. It asks: if a harmful
-event starts at a few farms, how widely might it spread, how much production
-might be lost, and how much difference could sheltered housing make?
+The model asks what could happen if a harmful event starts at one or more farms
+and spreads through a known farm population. It estimates which farms are most
+often affected, how much production could be lost, and whether sheltered farms
+perform better than unsheltered farms.
 
-The model is useful for comparing protection strategies and understanding the
-range of plausible outcomes. It is not a forecast for a specific real event.
+The results describe the fixed farms in `r config$input_data$file`. They are no
+longer based on a newly invented geography in every run.
 
-## What a node means
+## What one node means
 
-A **node is one farm site**. In a real dataset, one row would represent one
-farm. Each farm has:
+One node is one farm row in the input table. The current table contains
+**`r nrow(farms)` fixed farms**. Each farm keeps the same:
 
-- one latitude and longitude;
-- one production type, such as eggs or meat;
-- a sheltered or unsheltered housing status; and
-- an amount of production that could be lost.
+- farm ID and geographic location;
+- island or other transmission-barrier group;
+- region and production type;
+- sheltered status; and
+- production capacity.
 
-The current example uses `r population` farms. The population size comes from
-**`r population_source`**. Average production is represented
-by a value of `r format(config$production_metrics$average_bird_yield, big.mark = ",")`
-per farm. This value could mean birds, tonnes, trays of eggs, revenue or another
-useful capacity measure, as long as the same unit is used for every farm.
+These details do not change between Monte Carlo runs. Production type is used
+only to report results. Shelter is different: it reduces transmission risk.
 
-## What happens in one simulation run
+## What changes between runs
 
-One run is one possible outbreak scenario—not one farm and not one day.
+In each run, all farms reset to unaffected. The event then starts at farms
+selected according to `starting_location_mode` in `config.json`.
 
-For one run, the model:
+- **random** selects `r config$simulation_controls$initial_phase_c_entities`
+  starting farms for each of the configured runs;
+- **each_farm** makes every farm the starting farm repeatedly, providing a fair
+  comparison of which origin creates the largest cascade.
 
-1. Creates `r population` farm locations inside the configured area.
-2. Assigns production type (`r type_mix`) and sheltered status to each farm.
-3. Starts the event at three randomly selected farms.
-4. Simulates spread and farm-state changes for `r days` days.
-5. Records the farms that remain unaffected and the production lost.
+Transmission outcomes then vary randomly for `r days` days. Distances and farm
+attributes remain fixed. Farms in different barrier groups cannot transmit to
+each other.
 
-Farms closer to an active farm face higher risk. Risk falls smoothly with
-distance. Sheltered housing reduces that risk by the configured protection
-effect. Production type does not change risk; it is used only to split the final
-results.
+The four farm states are:
 
-## What the four farm states mean
+1. **Unaffected** — the farm has not been reached.
+2. **Incubating** — reached, but not yet able to affect other farms.
+3. **Active** — able to affect nearby farms.
+4. **Lost production capacity** — production is counted as lost.
 
-Every farm moves through four stages:
+## What the number of runs means
 
-1. **`r config$scenario_metadata$phase_a_label`** — the farm has not been
-   affected.
-2. **`r config$scenario_metadata$phase_b_label`** — the farm has been affected,
-   but cannot yet affect other farms.
-3. **`r config$scenario_metadata$phase_c_label`** — the farm can now affect
-   nearby farms.
-4. **`r config$scenario_metadata$phase_d_label`** — the event has run its active
-   course and that farm's production is counted as lost.
+This analysis completed **`r format(runs, big.mark = ",")` alternative outbreak
+scenarios** over the same farms. A run is not one farm or one day. It is one
+complete `r days`-day scenario.
 
-This is a one-way path. A farm does not recover or return to production within
-the current simulation period.
+More runs reduce random simulation noise and make percentages more stable. They
+do not correct unrealistic transmission assumptions. In random-start mode,
+check `times_selected_as_start` in the farm-risk CSV: some farms may be selected
+more often than others. Use `each_farm` mode when origin-to-origin comparison is
+the main question.
 
-## What 500 Monte Carlo runs mean
+## Population results
 
-The complete farm scenario is repeated **`r runs` times**. Each run creates new
-farm locations, new sheltered assignments, new production types, new starting
-farms and new random transmission outcomes.
+![](assets/spatial_cascade_loss_distribution.svg){fig-alt="Distribution of total production lost across runs over the fixed farm population"}
 
-The purpose is to see how much results vary across many plausible versions of
-the same scenario. Each value in the loss histogram is the total loss from one
-complete `r days`-day run.
+Average total loss was
+**`r format(round(summary$mean_production_loss), big.mark = ",")`**, about
+**`r round(mean_loss_share, 1)`%** of the fixed population's production
+capacity. The 5th to 95th percentile range was
+**`r format(round(summary$loss_p05), big.mark = ",")` to
+`r format(round(summary$loss_p95), big.mark = ",")`**.
 
-More runs make averages, percentiles and charts more stable by reducing random
-simulation noise. They do **not** make unrealistic assumptions accurate, and
-500 runs do not mean there is a 500-day event. The results remain conditional on
-the distances, timings and protection values set in `config.json`.
+The average represents about `r round(mean_loss_share, 1)`% of the fixed
+population's capacity, so the current settings produce a widespread cascade.
+This is strategically important: when most farms are reached, the model may
+have limited ability to distinguish moderate protection options. The spatial
+decay and timing assumptions should be calibrated before operational use.
 
-## Results
-
-![](assets/spatial_cascade_loss_distribution.svg){fig-alt="Distribution of production capacity lost across Monte Carlo runs"}
-
-Average lost production capacity was **`r format(round(summary$mean_production_loss), big.mark = ",")`**, or about
-**`r round(mean_loss_share, 1)`%** of the population's expected starting
-capacity. The middle 90% of simulated outcomes ranged from
-**`r format(round(summary$loss_p05), big.mark = ",")`** to
-**`r format(round(summary$loss_p95), big.mark = ",")`**.
-
-The spread of the histogram is strategically important: one average number does
-not capture the risk. Planning should allow for outcomes toward the upper end,
-not only the centre of the distribution.
-
-Sheltered farms finished unaffected in
-**`r round(summary$sheltered_survival_pct, 1)`%** of cases on average, compared
-with **`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered farms.
-The protection difference was therefore
-**`r round(summary$protection_benefit_percentage_points, 1)` percentage
-points**.
-
-Under the current assumptions, sheltering materially reduces exposure. The
-strategic question is whether that improvement justifies the cost of increasing
-the current `r round(allocation)`% allocation rate. That decision should be
-tested with realistic protection costs and real locations before operational
-use.
+The range matters more than the average alone. Routine planning can use the
+middle of the distribution; resilience planning should also consider the upper
+tail.
 
 ## Results by production type
 
-![](assets/spatial_cascade_loss_by_production_type.svg){fig-alt="Production loss distributions split by production type"}
+![](assets/spatial_cascade_loss_by_production_type.svg){fig-alt="Total population loss distributions by production type"}
 
 ```{r}
-#| label: production-type-table
-#| tbl-cap: "Average results by production type"
-display_type <- type_summary[, c(
-  "production_type", "configured_allocation_rate",
-  "average_farms_in_population", "average_farms_lost",
+#| label: type-table
+#| tbl-cap: "Fixed-population results by production type"
+display <- types[, c("production_type", "farms_in_population",
+  "farms_in_population_pct", "average_farms_lost",
   "average_farms_lost_pct", "mean_total_production_loss",
-  "sd_total_production_loss", "total_loss_p25", "total_loss_p75",
-  "sheltered_survival_pct", "unsheltered_survival_pct"
-)]
-display_type$configured_allocation_rate <-
-  paste0(round(100 * display_type$configured_allocation_rate), "%")
-display_type$average_farms_in_population <-
-  round(display_type$average_farms_in_population, 1)
-display_type$average_farms_lost <- paste0(
-  round(display_type$average_farms_lost, 1), " (",
-  round(display_type$average_farms_lost_pct, 1), "%)"
-)
-display_type$average_farms_lost_pct <- NULL
-display_type$mean_total_production_loss <-
-  format(round(display_type$mean_total_production_loss), big.mark = ",")
-display_type$sd_total_production_loss <-
-  format(round(display_type$sd_total_production_loss), big.mark = ",")
-display_type$total_loss_p25 <- paste0(
-  format(round(display_type$total_loss_p25), big.mark = ","), "–",
-  format(round(display_type$total_loss_p75), big.mark = ",")
-)
-display_type$total_loss_p75 <- NULL
-display_type$sheltered_survival_pct <-
-  round(display_type$sheltered_survival_pct, 1)
-display_type$unsheltered_survival_pct <-
-  round(display_type$unsheltered_survival_pct, 1)
-names(display_type) <- c(
-  "Production type", "Configured share", "Average farms represented",
+  "sd_total_production_loss", "total_loss_p25", "total_loss_p75")]
+display$farms_in_population_pct <- paste0(round(display$farms_in_population_pct, 1), "%")
+display$average_farms_lost <- paste0(round(display$average_farms_lost, 1),
+  " (", round(display$average_farms_lost_pct, 1), "%)")
+display$average_farms_lost_pct <- NULL
+display$mean_total_production_loss <- format(round(display$mean_total_production_loss), big.mark = ",")
+display$sd_total_production_loss <- format(round(display$sd_total_production_loss), big.mark = ",")
+display$total_loss_p25 <- paste0(format(round(display$total_loss_p25), big.mark = ","),
+  " to ", format(round(display$total_loss_p75), big.mark = ","))
+display$total_loss_p75 <- NULL
+names(display) <- c("Production type", "Farms", "Population share",
   "Average farms lost (%)", "Mean total loss", "Loss SD",
-  "25th to 75th percentile loss",
-  "Sheltered survival (%)", "Unsheltered survival (%)"
-)
-knitr::kable(display_type, row.names = FALSE)
+  "25th to 75th percentile loss")
+knitr::kable(display, row.names = FALSE)
 ```
 
-The loss values describe the **whole production-type population in one run**.
-For example, the eggs result is the total loss across all egg farms in that
-scenario, averaged across the `r runs` runs. It is not the loss of one average
-egg farm.
+These are population totals, not average-farm losses. A larger category will
+usually show more total loss because it contains more farms. Production type
+does not alter transmission.
 
-The standard deviation shows how much total loss varies around the mean. The
-25th to 75th percentile band contains the middle half of outcomes and is usually
-easier to use for routine planning than one average. The existing 5th to 95th
-percentiles in the CSV give a wider stress-testing range.
+![](assets/spatial_cascade_survival_comparison.svg){fig-alt="Sheltered and unsheltered survival by production type"}
 
-For a population view, focus on three measures together:
+Sheltered survival averaged **`r round(summary$sheltered_survival_pct, 1)`%**,
+compared with **`r round(summary$unsheltered_survival_pct, 1)`%** for
+unsheltered farms. The difference was
+**`r round(summary$protection_benefit_percentage_points, 1)` percentage
+points** under the configured assumptions.
 
-- **Average farms represented** shows the size of each category.
-- **Average farms lost (%)** shows how many farm sites reach the final lost
-  state, both as a count and as a share of that category.
-- **Mean total loss and its band** show the production capacity exposed across
-  the whole category.
+```{r}
+#| results: asis
+if (protection_difference < 0) {
+  cat(paste0(
+    "Sheltered farms have lower raw survival in this run. This does **not** ",
+    "mean shelter increases transmission. Shelter status and geography are ",
+    "fixed, so sheltered farms may be concentrated in more exposed locations ",
+    "or selected as starting farms more often. This is an observed population ",
+    "comparison, not a causal estimate of shelter effectiveness.\n"
+  ))
+} else {
+  cat(paste0(
+    "Sheltered farms have higher raw survival in this fixed population. The ",
+    "difference is still an observed comparison and may partly reflect where ",
+    "sheltered farms are located.\n"
+  ))
+}
+```
 
-The larger production category will normally show more total loss because it
-contains more farms. Differences in survival between categories are sampling
-variation, not a different transmission rule. The main strategic comparison
-remains sheltered versus unsheltered within each category.
+To isolate the effect of shelter, a future paired analysis should run the same
+farms, starting locations and random transmission rolls twice: once with the
+configured shelter protection and once with protection switched off. The
+difference between those paired outcomes would be a cleaner protection-effect
+estimate.
 
-![](assets/spatial_cascade_survival_comparison.svg){fig-alt="Sheltered and unsheltered survival split by production type"}
+## Which farms are most exposed
+
+![](assets/spatial_cascade_farm_risk_map.svg){fig-alt="Fixed farm locations coloured by probability of reaching the lost state"}
+
+The map and `assets/spatial_cascade_farm_risk.csv` provide the new farm-level
+view. For every farm they report:
+
+- how often it was selected as a starting farm;
+- probability of being affected;
+- probability of reaching the final lost state; and
+- expected contribution to total production loss.
+
+In random-start mode these probabilities describe the configured mixture of
+starting locations. They are not intrinsic farm scores independent of the start
+sampling design. With `r runs` runs and
+`r config$simulation_controls$initial_phase_c_entities` starts per run, a farm
+is selected about
+`r round(runs * config$simulation_controls$initial_phase_c_entities / nrow(farms), 1)`
+times on average, but the actual count varies. Use `each_farm` mode for balanced
+origin comparisons.
 
 ## How to use it
 
-1. Edit `config.json`.
-2. Set the number of farms and simulation days. To use the number of rows in a
-   farm CSV instead, set `use_row_count_for_population_size` to `true` and set
-   `input_data.file` to the CSV path. Only the row count is used.
-3. Set the map area and how quickly risk falls with distance.
-4. Set the incubation and active periods.
-5. Set average production per farm, production types and their shares.
-6. Set the share of farms with sheltered housing and its expected protection.
-   Production-type shares must sum to 1.
-7. Run:
+1. Replace or edit `data/farms.csv`.
+2. Update `input_data.column_mappings` in `config.json` if column names differ.
+3. Choose `random` or `each_farm` starting-location mode.
+4. Set phase durations, spatial decay, protection efficiency, days and runs.
+5. Run `source("spatial_cascade_monte_carlo.R")`.
+6. Review the charts and CSV files in `assets/`.
+7. Render this report with `quarto render spatial_cascade_report.qmd`.
 
-```{r}
-#| eval: false
-source("spatial_cascade_monte_carlo.R")
-```
+## Strategic limits
 
-8. Review the SVG charts and summary files in `assets/`.
-9. Render this report after the simulation finishes:
-
-```bash
-quarto render spatial_cascade_report.qmd
-```
-
-For quick testing, reduce `monte_carlo_iterations`. Increase it when the results
-change noticeably between repeated executions. Several hundred runs are a
-reasonable starting point for strategic comparisons of a model this size.
-
-## What matters most
-
-- **Distance decay** controls whether the event stays near the starting farms or
-  spreads more widely.
-- **Phase timing** controls how quickly farms become active and how long they can
-  affect other farms.
-- **Protection efficiency and allocation** determine how much of the population
-  receives a reduced risk.
-- **Farm locations** create uncertainty, which is why the model reports a range
-  rather than one answer.
-
-## Limits
-
-The current locations are random within a rectangular map area, not actual farm
-locations. The model does not prevent farms from being placed in water or other
-unsuitable land. Transmission uses direct geographic distance and does not
-include roads, terrain, prevailing wind, animal movements, cleaning practices,
-farm contacts or response actions. Replace these assumptions and validate the
-parameters before treating the output as a real farm-risk estimate.
+Results are conditional on the farms and model settings supplied. Direct
+geographic distance does not capture roads, wind, animal movements, shared
+suppliers, cleaning practices or response actions. Farm-level probabilities
+should not be used operationally until the fixed data and transmission settings
+have been validated with subject-matter experts.
