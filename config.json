@@ -43,6 +43,7 @@
   },
   "production_metrics": {
     "average_bird_yield": 1000,
+    "production_capacity_unit": "birds",
     "production_types": [
       {
         "type": "Eggs",

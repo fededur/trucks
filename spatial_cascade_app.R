@@ -173,6 +173,11 @@ REGION_LABEL <- meta$region_label %||% "Region"
 SHELTER_CATEGORY_LABEL <- meta$shelter_category_label %||% "Shelter category"
 SHELTERED_LABEL <- meta$sheltered_label %||% "Sheltered"
 UNSHELTERED_LABEL <- meta$unsheltered_label %||% "Unsheltered"
+PRODUCTION_CAPACITY_UNIT <-
+  config$production_metrics$production_capacity_unit %||% "birds"
+format_capacity <- function(value) {
+  paste(format(round(value), big.mark = ","), PRODUCTION_CAPACITY_UNIT)
+}
 help_label <- function(text, note) {
   tags$span(text, class = "parameter-label", title = note)
 }
@@ -399,16 +404,16 @@ server <- function(input, output, session) {
       type_lost <- sum(result$production_yield[rows & result$lost_by_day])
       type_pct <- if (type_capacity > 0) 100 * type_lost / type_capacity else 0
       card(paste(type, "capacity lost"),
-           format(round(type_lost), big.mark = ","),
+           format_capacity(type_lost),
            sprintf("%.1f%% of %s capacity", type_pct, type))
     })
 
     div(class = "loss-grid",
         card("National production capacity",
-             format(round(total_capacity), big.mark = ","),
+             format_capacity(total_capacity),
              paste(format(nrow(result), big.mark = ","), "farms")),
         card("National capacity lost",
-             format(round(total_lost), big.mark = ","),
+             format_capacity(total_lost),
              "Absolute production capacity"),
         card("Lost / national capacity",
              sprintf("%.1f%%", total_lost_pct),
@@ -453,7 +458,7 @@ server <- function(input, output, session) {
       result$id, REGION_LABEL, result$region,
       PRODUCTION_TYPE_LABEL, result$production_type,
       SHELTER_CATEGORY_LABEL, shelter_category,
-      format(round(result$production_yield), big.mark = ","),
+      vapply(result$production_yield, format_capacity, character(1)),
       ifelse(is.na(result$reached_day), "Not reached", paste("Day", result$reached_day)),
       ifelse(is.na(result$control_day), "Not selected",
              paste(tools::toTitleCase(result$control_strategy), "on day", result$control_day)),
@@ -463,7 +468,7 @@ server <- function(input, output, session) {
       result$id, REGION_LABEL, result$region,
       PRODUCTION_TYPE_LABEL, result$production_type,
       SHELTER_CATEGORY_LABEL, shelter_category,
-      format(round(result$production_yield), big.mark = ","))
+      vapply(result$production_yield, format_capacity, character(1)))
     # Circle area, rather than radius, is proportional to production capacity.
     # Because area grows with radius squared, use the square-root transform.
     radius <- 12 * sqrt(result$production_yield / max(result$production_yield))
@@ -476,7 +481,8 @@ server <- function(input, output, session) {
                                     opacity = .96)) |>
       addLegend(position = "bottomright", colors = colours,
         labels = names(colours), title = paste("State on day", day), opacity = 1) |>
-      addControl("Bubble area = production capacity", position = "bottomleft",
+      addControl(paste("Bubble area = production capacity in",
+                       PRODUCTION_CAPACITY_UNIT), position = "bottomleft",
                  className = "map-size-note") |>
       fitBounds(lng1 = config$spatial_bounds$minimum_longitude,
                 lat1 = config$spatial_bounds$minimum_latitude,
