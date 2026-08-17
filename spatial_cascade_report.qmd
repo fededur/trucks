@@ -36,35 +36,75 @@ mean_loss_share <- 100 * summary$mean_production_loss / total_average_capacity
 
 ## Purpose
 
-This model tests how a problem can spread through a spatial network and reduce
-production capacity. The current configuration uses poultry and barn language,
-but the same engine can represent farms, utilities, financial networks or urban
-assets by changing `config.json`.
+This report uses poultry farms as the practical example. It asks: if a harmful
+event starts at a few farms, how widely might it spread, how much production
+might be lost, and how much difference could sheltered housing make?
 
 The model is useful for comparing protection strategies and understanding the
 range of plausible outcomes. It is not a forecast for a specific real event.
 
-## How the model works
+## What a node means
 
-Each simulation creates `r population` nodes at new random locations. Three
-nodes begin in the active state. The model then runs for `r days` days.
+A **node is one farm site**. In a real dataset, one row would represent one
+farm. Each farm has:
 
-Each node is also assigned a production type using the configured mix
-(`r type_mix`). Production type is used only to split the reported results. It
-does not change distance, transmission, protection or phase timing.
+- one latitude and longitude;
+- one production type, such as eggs or meat;
+- a sheltered or unsheltered housing status; and
+- an amount of production that could be lost.
 
-Every node moves through four stages:
+The current example uses `r population` farms. Average production is represented
+by a value of `r format(config$production_metrics$average_bird_yield, big.mark = ",")`
+per farm. This value could mean birds, tonnes, trays of eggs, revenue or another
+useful capacity measure, as long as the same unit is used for every farm.
 
-1. **`r config$scenario_metadata$phase_a_label`** — not affected.
-2. **`r config$scenario_metadata$phase_b_label`** — affected but not yet active.
-3. **`r config$scenario_metadata$phase_c_label`** — able to affect nearby nodes.
-4. **`r config$scenario_metadata$phase_d_label`** — its production value is
-   counted as lost.
+## What happens in one simulation run
 
-Risk falls as geographic distance increases. Sheltered nodes receive the
-configured protection reduction. The simulation is repeated `r runs` times,
-with a new geographic layout each time, so the results show a range rather than
-one fixed answer.
+One run is one possible outbreak scenario—not one farm and not one day.
+
+For one run, the model:
+
+1. Creates `r population` farm locations inside the configured area.
+2. Assigns production type (`r type_mix`) and sheltered status to each farm.
+3. Starts the event at three randomly selected farms.
+4. Simulates spread and farm-state changes for `r days` days.
+5. Records the farms that remain unaffected and the production lost.
+
+Farms closer to an active farm face higher risk. Risk falls smoothly with
+distance. Sheltered housing reduces that risk by the configured protection
+effect. Production type does not change risk; it is used only to split the final
+results.
+
+## What the four farm states mean
+
+Every farm moves through four stages:
+
+1. **`r config$scenario_metadata$phase_a_label`** — the farm has not been
+   affected.
+2. **`r config$scenario_metadata$phase_b_label`** — the farm has been affected,
+   but cannot yet affect other farms.
+3. **`r config$scenario_metadata$phase_c_label`** — the farm can now affect
+   nearby farms.
+4. **`r config$scenario_metadata$phase_d_label`** — the event has run its active
+   course and that farm's production is counted as lost.
+
+This is a one-way path. A farm does not recover or return to production within
+the current simulation period.
+
+## What 500 Monte Carlo runs mean
+
+The complete farm scenario is repeated **`r runs` times**. Each run creates new
+farm locations, new sheltered assignments, new production types, new starting
+farms and new random transmission outcomes.
+
+The purpose is to see how much results vary across many plausible versions of
+the same scenario. Each value in the loss histogram is the total loss from one
+complete `r days`-day run.
+
+More runs make averages, percentiles and charts more stable by reducing random
+simulation noise. They do **not** make unrealistic assumptions accurate, and
+500 runs do not mean there is a 500-day event. The results remain conditional on
+the distances, timings and protection values set in `config.json`.
 
 ## Results
 
@@ -80,9 +120,9 @@ The spread of the histogram is strategically important: one average number does
 not capture the risk. Planning should allow for outcomes toward the upper end,
 not only the centre of the distribution.
 
-Sheltered nodes finished unaffected in
+Sheltered farms finished unaffected in
 **`r round(summary$sheltered_survival_pct, 1)`%** of cases on average, compared
-with **`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered nodes.
+with **`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered farms.
 The protection difference was therefore
 **`r round(summary$protection_benefit_percentage_points, 1)` percentage
 points**.
@@ -120,7 +160,7 @@ knitr::kable(display_type, row.names = FALSE)
 ```
 
 The larger production category will normally show more total loss because it
-contains more nodes. Differences in survival between categories are sampling
+contains more farms. Differences in survival between categories are sampling
 variation, not a different transmission rule. The main strategic comparison
 remains sheltered versus unsheltered within each category.
 
@@ -129,40 +169,46 @@ remains sheltered versus unsheltered within each category.
 ## How to use it
 
 1. Edit `config.json`.
-2. Set the scenario labels, population, duration, spatial decay, phase timing,
-   node value, production-type names and shares, allocation rate, protection
-   efficiency and map bounds. Production-type shares must sum to 1.
-3. Run:
+2. Set the number of farms and simulation days.
+3. Set the map area and how quickly risk falls with distance.
+4. Set the incubation and active periods.
+5. Set average production per farm, production types and their shares.
+6. Set the share of farms with sheltered housing and its expected protection.
+   Production-type shares must sum to 1.
+7. Run:
 
 ```{r}
 #| eval: false
 source("spatial_cascade_monte_carlo.R")
 ```
 
-4. Review the SVG charts and summary files in `assets/`.
-5. Render this report after the simulation finishes:
+8. Review the SVG charts and summary files in `assets/`.
+9. Render this report after the simulation finishes:
 
 ```bash
 quarto render spatial_cascade_report.qmd
 ```
 
-For quick testing, reduce `monte_carlo_iterations`. Use several hundred or more
-runs for a stable strategic comparison.
+For quick testing, reduce `monte_carlo_iterations`. Increase it when the results
+change noticeably between repeated executions. Several hundred runs are a
+reasonable starting point for strategic comparisons of a model this size.
 
 ## What matters most
 
-- **Distance decay** controls how local or widespread the cascade becomes.
-- **Phase timing** controls how quickly it grows and how long nodes remain
-  active.
+- **Distance decay** controls whether the event stays near the starting farms or
+  spreads more widely.
+- **Phase timing** controls how quickly farms become active and how long they can
+  affect other farms.
 - **Protection efficiency and allocation** determine how much of the population
   receives a reduced risk.
-- **Geographic layout** creates uncertainty, which is why the model reports a
-  distribution rather than one answer.
+- **Farm locations** create uncertainty, which is why the model reports a range
+  rather than one answer.
 
 ## Limits
 
-The current locations are random within a bounding box, not actual farm or
-network locations. Transmission uses direct geographic distance and does not
-include roads, terrain, prevailing wind, operating dependencies or response
-actions. Replace these assumptions before treating the output as a real-world
-risk estimate.
+The current locations are random within a rectangular map area, not actual farm
+locations. The model does not prevent farms from being placed in water or other
+unsuitable land. Transmission uses direct geographic distance and does not
+include roads, terrain, prevailing wind, animal movements, cleaning practices,
+farm contacts or response actions. Replace these assumptions and validate the
+parameters before treating the output as a real farm-risk estimate.
