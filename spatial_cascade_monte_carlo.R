@@ -277,7 +277,13 @@ farm_risk_plot <- ggplot() +
                           config$spatial_bounds$maximum_latitude),
                  expand = FALSE) +
   scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
-  scale_size_area(max_size = 6, name = "Production") + labs(title = "Farm-level probability of reaching the lost state", subtitle = "Conditional on the configured starting-location mode", x = "Longitude", y = "Latitude") + report_theme + theme(legend.position = "right")
+  scale_size_area(max_size = 6, name = "Production") +
+  labs(title = "Farm-level probability of reaching the lost state",
+       subtitle = "Conditional on the configured starting-location mode",
+       x = NULL, y = NULL) +
+  report_theme +
+  theme(legend.position = "right", axis.text = element_blank(),
+        axis.ticks = element_blank())
 
 plots <- list(spatial_cascade_loss_distribution = loss_plot,
   spatial_cascade_loss_by_production_type = type_loss_plot,
