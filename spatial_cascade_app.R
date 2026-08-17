@@ -4,6 +4,7 @@
 
 library(shiny)
 library(leaflet)
+library(ggplot2)
 
 config <- jsonlite::fromJSON("config.json", simplifyVector = TRUE)
 `%||%` <- function(x, fallback) if (is.null(x) || !length(x) || is.na(x[1])) fallback else x
@@ -161,6 +162,7 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
   farm_result$parent_index <- parent
   farm_result$parent_id <- ifelse(is.na(parent), NA_character_, farms$id[parent])
   farm_result$final_state <- state
+  attr(farm_result, "simulation_days") <- days
   farm_result
 }
 
@@ -229,7 +231,17 @@ ui <- fluidPage(
     .about-card h3 { color:#173b57; font-size:18px; margin:0 0 8px; }
     .about-card h4 { color:#167d8d; font-size:14px; margin:12px 0 5px; }
     .about-card p, .about-card li { line-height:1.5; }
+    .results-wrap { padding:2px 0 16px; }
+    .results-intro { background:white; border-left:4px solid #167d8d;
+      border-radius:7px; padding:10px 14px; margin-bottom:8px;
+      box-shadow:0 2px 8px rgba(27,54,78,.10); color:#526575; }
+    .results-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px; }
+    .results-grid .panel-card { min-width:0; }
+    .results-grid .wide-result { grid-column:1 / -1; }
     @media(max-width:900px) { .kpi-grid { grid-template-columns:repeat(2,1fr); }
+      .results-grid { grid-template-columns:1fr; }
+      .results-grid .wide-result { grid-column:auto; }
       #cascade_map { height:480px !important; } }
   "))),
   div(class = "app-title",
@@ -314,6 +326,18 @@ ui <- fluidPage(
       uiOutput("loss_cards"),
       div(class = "panel-card", leafletOutput("cascade_map"))
     ))),
+    tabPanel("Scenario results",
+      div(class = "results-wrap",
+        div(class = "results-intro",
+          "These figures use the completed scenario. Play is optional: move the day slider manually or use playback. The dashed line marks the day currently shown on the map."),
+        div(class = "results-grid",
+          div(class = "panel-card", plotOutput("total_loss_timeline", height = "285px")),
+          div(class = "panel-card", plotOutput("type_loss_timeline", height = "285px")),
+          div(class = "panel-card wide-result",
+              plotOutput("farm_count_timeline", height = "260px"))
+        )
+      )
+    ),
     tabPanel("About the app",
       div(class = "about-wrap",
         div(class = "about-card",
@@ -348,7 +372,8 @@ ui <- fluidPage(
           h4("Reading the map"),
           p("Red farms are initially affected at the start of the scenario. Yellow farms become affected as the event spreads. Grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
           h4("Reading the figures"),
-          p("The cards show farms reached, farms lost, farms culled, total national capacity lost, and losses by production type. Loss includes farms that naturally reach the lost state and farms removed through culling.")),
+          p("The cards show farms reached, farms lost, farms culled, total national capacity lost, and losses by production type. Loss includes farms that naturally reach the lost state and farms removed through culling."),
+          p("The Scenario results tab shows how these losses and farm counts build over time. The dashed line follows the day selected on the map. Play is helpful for presentations, but it is not required to use the figures.")),
         div(class = "about-card",
           h3("Important limits"),
           p("The result depends on the data and settings supplied. Straight-line distance does not describe every real pathway, such as animal movements, shared workers, vehicles or equipment. Use the app to compare scenarios and support discussion, not as a stand-alone operational decision."))
@@ -421,6 +446,113 @@ server <- function(input, output, session) {
              "Affected", "Not affected"))
     result$lost_by_day <- !is.na(result$lost_day) & result$lost_day <= day
     result
+  })
+
+  timeline_data <- reactive({
+    result <- scenario()
+    simulation_days <- attr(result, "simulation_days") %||%
+      as.integer(input$duration)
+    days <- 0:simulation_days
+    total_capacity <- sum(result$production_yield)
+
+    total <- do.call(rbind, lapply(days, function(day) {
+      lost <- !is.na(result$lost_day) & result$lost_day <= day
+      affected <- !is.na(result$reached_day) & result$reached_day <= day
+      culled <- result$controlled & !is.na(result$control_day) &
+        result$control_day <= day
+      lost_capacity <- sum(result$production_yield[lost])
+      data.frame(day = day, lost_capacity = lost_capacity,
+        lost_pct = if (total_capacity > 0) 100 * lost_capacity / total_capacity else 0,
+        affected_farms = sum(affected), lost_farms = sum(lost),
+        culled_farms = sum(culled))
+    }))
+
+    type <- do.call(rbind, lapply(sort(unique(result$production_type)),
+      function(production_type) {
+        rows <- result$production_type == production_type
+        do.call(rbind, lapply(days, function(day) {
+          lost <- rows & !is.na(result$lost_day) & result$lost_day <= day
+          data.frame(day = day, production_type = production_type,
+                     lost_capacity = sum(result$production_yield[lost]))
+        }))
+      }))
+
+    counts <- rbind(
+      data.frame(day = days, measure = "Affected farms",
+                 farms = total$affected_farms),
+      data.frame(day = days, measure = "Farms in lost state",
+                 farms = total$lost_farms),
+      data.frame(day = days, measure = "Farms culled",
+                 farms = total$culled_farms)
+    )
+    list(total = total, type = type, counts = counts,
+         total_capacity = total_capacity)
+  })
+
+  results_theme <- theme_minimal(base_size = 11) +
+    theme(plot.title = element_text(face = "bold", colour = "#173B57"),
+          plot.subtitle = element_text(colour = "#526575"),
+          panel.grid.minor = element_blank(), legend.position = "top")
+
+  output$total_loss_timeline <- renderPlot({
+    timeline <- timeline_data()
+    total <- timeline$total
+    current_day <- min(input$display_day, max(total$day))
+    current <- total[total$day == current_day, , drop = FALSE]
+    ggplot(total, aes(day, lost_capacity)) +
+      geom_area(fill = "#E76F51", alpha = .18) +
+      geom_line(colour = "#C94F38", linewidth = 1) +
+      geom_vline(xintercept = current_day, colour = "#173B57",
+                 linetype = "dashed") +
+      scale_y_continuous(
+        labels = function(x) format(round(x), big.mark = ","),
+        sec.axis = sec_axis(~ . / timeline$total_capacity * 100,
+                            name = "Lost / national capacity (%)")) +
+      labs(title = "Total production capacity lost",
+           subtitle = paste0("Day ", current_day, ": ",
+             format_capacity(current$lost_capacity), " (",
+             sprintf("%.1f%%", current$lost_pct), ")"),
+           x = "Scenario day",
+           y = paste0("Capacity lost (", PRODUCTION_CAPACITY_UNIT, ")")) +
+      results_theme
+  })
+
+  output$type_loss_timeline <- renderPlot({
+    timeline <- timeline_data()
+    types <- sort(unique(timeline$type$production_type))
+    current_day <- min(input$display_day, max(timeline$type$day))
+    ggplot(timeline$type,
+           aes(day, lost_capacity, colour = production_type)) +
+      geom_line(linewidth = 1) +
+      geom_vline(xintercept = current_day, colour = "#173B57",
+                 linetype = "dashed") +
+      scale_colour_manual(values = setNames(hcl.colors(length(types), "Dark 3"),
+                                             types),
+                          name = PRODUCTION_TYPE_LABEL) +
+      scale_y_continuous(labels = function(x) format(round(x), big.mark = ",")) +
+      labs(title = "Capacity lost by production type",
+           subtitle = "Categories are read from the farm data",
+           x = "Scenario day",
+           y = paste0("Capacity lost (", PRODUCTION_CAPACITY_UNIT, ")")) +
+      results_theme
+  })
+
+  output$farm_count_timeline <- renderPlot({
+    timeline <- timeline_data()
+    current_day <- min(input$display_day, max(timeline$counts$day))
+    count_colours <- c("Affected farms" = "#F2B134",
+                       "Farms in lost state" = "#C94F38",
+                       "Farms culled" = "#167D8D")
+    ggplot(timeline$counts, aes(day, farms, colour = measure)) +
+      geom_line(linewidth = 1) +
+      geom_vline(xintercept = current_day, colour = "#173B57",
+                 linetype = "dashed") +
+      scale_colour_manual(values = count_colours, name = NULL) +
+      scale_y_continuous(breaks = scales::breaks_pretty()) +
+      labs(title = "Farm counts over time",
+           subtitle = "Affected, lost and culled farms are shown separately",
+           x = "Scenario day", y = "Number of farms") +
+      results_theme
   })
 
   output$reached_kpi <- renderText({
