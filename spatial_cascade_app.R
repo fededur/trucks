@@ -329,7 +329,7 @@ ui <- fluidPage(
     tabPanel("Scenario results",
       div(class = "results-wrap",
         div(class = "results-intro",
-          "These figures use the completed scenario. Play is optional: move the day slider manually or use playback. The dashed line marks the day currently shown on the map."),
+          "These figures use the completed scenario. Play is optional: move the day slider manually or use playback. The vertical dashed line marks the day currently shown on the map."),
         div(class = "results-grid",
           div(class = "panel-card", plotOutput("total_loss_timeline", height = "285px")),
           div(class = "panel-card", plotOutput("type_loss_timeline", height = "285px")),
@@ -373,7 +373,7 @@ ui <- fluidPage(
           p("Red farms are initially affected at the start of the scenario. Yellow farms become affected as the event spreads. Grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
           h4("Reading the figures"),
           p("The cards show farms reached, farms lost, farms culled, total national capacity lost, and losses by production type. Loss includes farms that naturally reach the lost state and farms removed through culling."),
-          p("The Scenario results tab shows how these losses and farm counts build over time. The dashed line follows the day selected on the map. Play is helpful for presentations, but it is not required to use the figures.")),
+          p("The Scenario results tab shows how these losses and farm counts build over time. Capacity reference lines show the national total and each production type's available total. The vertical dashed line follows the day selected on the map. Play is helpful for presentations, but it is not required to use the figures.")),
         div(class = "about-card",
           h3("Important limits"),
           p("The result depends on the data and settings supplied. Straight-line distance does not describe every real pathway, such as animal movements, shared workers, vehicles or equipment. Use the app to compare scenarios and support discussion, not as a stand-alone operational decision."))
@@ -476,6 +476,9 @@ server <- function(input, output, session) {
                      lost_capacity = sum(result$production_yield[lost]))
         }))
       }))
+    type_capacity <- aggregate(production_yield ~ production_type,
+                               data = result, FUN = sum)
+    names(type_capacity)[2] <- "total_capacity"
 
     counts <- rbind(
       data.frame(day = days, measure = "Affected farms",
@@ -485,7 +488,8 @@ server <- function(input, output, session) {
       data.frame(day = days, measure = "Farms culled",
                  farms = total$culled_farms)
     )
-    list(total = total, type = type, counts = counts,
+    list(total = total, type = type, type_capacity = type_capacity,
+         counts = counts,
          total_capacity = total_capacity)
   })
 
@@ -500,14 +504,22 @@ server <- function(input, output, session) {
     current_day <- min(input$display_day, max(total$day))
     current <- total[total$day == current_day, , drop = FALSE]
     ggplot(total, aes(day, lost_capacity)) +
+      geom_hline(yintercept = timeline$total_capacity, colour = "#7B8790",
+                 linetype = "longdash", linewidth = .7) +
       geom_area(fill = "#E76F51", alpha = .18) +
       geom_line(colour = "#C94F38", linewidth = 1) +
       geom_vline(xintercept = current_day, colour = "#173B57",
                  linetype = "dashed") +
       scale_y_continuous(
         labels = function(x) format(round(x), big.mark = ","),
+        expand = expansion(mult = c(0, .08)),
         sec.axis = sec_axis(~ . / timeline$total_capacity * 100,
                             name = "Lost / national capacity (%)")) +
+      annotate("text", x = max(total$day) * .02,
+               y = timeline$total_capacity,
+               label = paste("National capacity:",
+                             format_capacity(timeline$total_capacity)),
+               hjust = 0, vjust = -0.5, colour = "#66747D", size = 3) +
       labs(title = "Total production capacity lost",
            subtitle = paste0("Day ", current_day, ": ",
              format_capacity(current$lost_capacity), " (",
@@ -523,15 +535,20 @@ server <- function(input, output, session) {
     current_day <- min(input$display_day, max(timeline$type$day))
     ggplot(timeline$type,
            aes(day, lost_capacity, colour = production_type)) +
+      geom_hline(data = timeline$type_capacity,
+                 aes(yintercept = total_capacity, colour = production_type),
+                 linetype = "dotted", linewidth = .7, alpha = .55,
+                 inherit.aes = FALSE) +
       geom_line(linewidth = 1) +
       geom_vline(xintercept = current_day, colour = "#173B57",
                  linetype = "dashed") +
       scale_colour_manual(values = setNames(hcl.colors(length(types), "Dark 3"),
                                              types),
                           name = PRODUCTION_TYPE_LABEL) +
-      scale_y_continuous(labels = function(x) format(round(x), big.mark = ",")) +
+      scale_y_continuous(labels = function(x) format(round(x), big.mark = ","),
+                         expand = expansion(mult = c(0, .06))) +
       labs(title = "Capacity lost by production type",
-           subtitle = "Categories are read from the farm data",
+           subtitle = "Dotted lines show total available capacity by category",
            x = "Scenario day",
            y = paste0("Capacity lost (", PRODUCTION_CAPACITY_UNIT, ")")) +
       results_theme
