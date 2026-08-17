@@ -133,6 +133,14 @@ production_loss_by_type_log <- matrix(
   0, nrow = MONTE_CARLO_RUNS, ncol = length(PRODUCTION_TYPES),
   dimnames = list(NULL, PRODUCTION_TYPES)
 )
+population_count_by_type_log <- matrix(
+  0L, nrow = MONTE_CARLO_RUNS, ncol = length(PRODUCTION_TYPES),
+  dimnames = list(NULL, PRODUCTION_TYPES)
+)
+lost_node_count_by_type_log <- matrix(
+  0L, nrow = MONTE_CARLO_RUNS, ncol = length(PRODUCTION_TYPES),
+  dimnames = list(NULL, PRODUCTION_TYPES)
+)
 survival_by_type_and_shelter_log <- array(
   NA_real_,
   dim = c(MONTE_CARLO_RUNS, length(PRODUCTION_TYPES), 2L),
@@ -255,6 +263,10 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
 
   for (type_name in PRODUCTION_TYPES) {
     type_rows <- nodes$production_type == type_name
+    population_count_by_type_log[sim, type_name] <- sum(type_rows)
+    lost_node_count_by_type_log[sim, type_name] <- sum(
+      type_rows & nodes$current_state == "D"
+    )
     production_loss_by_type_log[sim, type_name] <- sum(
       nodes$production_yield[type_rows & nodes$current_state == "D"]
     )
@@ -302,6 +314,8 @@ simulation_results <- list(
   unsheltered_survival_log = unsheltered_survival_log,
   average_survival = average_survival,
   production_loss_by_type_log = production_loss_by_type_log,
+  population_count_by_type_log = population_count_by_type_log,
+  lost_node_count_by_type_log = lost_node_count_by_type_log,
   survival_by_type_and_shelter_log = survival_by_type_and_shelter_log,
   phase_labels = c(A = PHASE_A_LABEL, B = PHASE_B_LABEL,
                    C = PHASE_C_LABEL, D = PHASE_D_LABEL)
@@ -435,14 +449,24 @@ write.csv(summary_table,
 
 production_type_summary <- do.call(rbind, lapply(PRODUCTION_TYPES, function(type_name) {
   type_losses <- production_loss_by_type_log[, type_name]
+  type_population <- population_count_by_type_log[, type_name]
+  type_lost_nodes <- lost_node_count_by_type_log[, type_name]
   data.frame(
     production_type = type_name,
     configured_allocation_rate =
       PRODUCTION_TYPE_RATES[match(type_name, PRODUCTION_TYPES)],
-    mean_production_loss = mean(type_losses),
-    median_production_loss = median(type_losses),
-    loss_p05 = unname(quantile(type_losses, 0.05)),
-    loss_p95 = unname(quantile(type_losses, 0.95)),
+    average_farms_in_population = mean(type_population),
+    average_farms_lost = mean(type_lost_nodes),
+    average_farms_lost_pct = mean(
+      100 * type_lost_nodes / pmax(1, type_population)
+    ),
+    mean_total_production_loss = mean(type_losses),
+    sd_total_production_loss = stats::sd(type_losses),
+    total_loss_p25 = unname(quantile(type_losses, 0.25)),
+    median_total_production_loss = median(type_losses),
+    total_loss_p75 = unname(quantile(type_losses, 0.75)),
+    total_loss_p05 = unname(quantile(type_losses, 0.05)),
+    total_loss_p95 = unname(quantile(type_losses, 0.95)),
     sheltered_survival_pct = average_type_survival[type_name, SHELTERED_LABEL],
     unsheltered_survival_pct = average_type_survival[type_name, UNSHELTERED_LABEL],
     stringsAsFactors = FALSE

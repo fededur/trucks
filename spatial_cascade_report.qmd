@@ -141,23 +141,60 @@ use.
 #| label: production-type-table
 #| tbl-cap: "Average results by production type"
 display_type <- type_summary[, c(
-  "production_type", "configured_allocation_rate", "mean_production_loss",
+  "production_type", "configured_allocation_rate",
+  "average_farms_in_population", "average_farms_lost",
+  "average_farms_lost_pct", "mean_total_production_loss",
+  "sd_total_production_loss", "total_loss_p25", "total_loss_p75",
   "sheltered_survival_pct", "unsheltered_survival_pct"
 )]
 display_type$configured_allocation_rate <-
   paste0(round(100 * display_type$configured_allocation_rate), "%")
-display_type$mean_production_loss <-
-  format(round(display_type$mean_production_loss), big.mark = ",")
+display_type$average_farms_in_population <-
+  round(display_type$average_farms_in_population, 1)
+display_type$average_farms_lost <- paste0(
+  round(display_type$average_farms_lost, 1), " (",
+  round(display_type$average_farms_lost_pct, 1), "%)"
+)
+display_type$average_farms_lost_pct <- NULL
+display_type$mean_total_production_loss <-
+  format(round(display_type$mean_total_production_loss), big.mark = ",")
+display_type$sd_total_production_loss <-
+  format(round(display_type$sd_total_production_loss), big.mark = ",")
+display_type$total_loss_p25 <- paste0(
+  format(round(display_type$total_loss_p25), big.mark = ","), "–",
+  format(round(display_type$total_loss_p75), big.mark = ",")
+)
+display_type$total_loss_p75 <- NULL
 display_type$sheltered_survival_pct <-
   round(display_type$sheltered_survival_pct, 1)
 display_type$unsheltered_survival_pct <-
   round(display_type$unsheltered_survival_pct, 1)
 names(display_type) <- c(
-  "Production type", "Configured share", "Average loss",
+  "Production type", "Configured share", "Average farms represented",
+  "Average farms lost (%)", "Mean total loss", "Loss SD",
+  "25th–75th percentile loss",
   "Sheltered survival (%)", "Unsheltered survival (%)"
 )
 knitr::kable(display_type, row.names = FALSE)
 ```
+
+The loss values describe the **whole production-type population in one run**.
+For example, the eggs result is the total loss across all egg farms in that
+scenario, averaged across the `r runs` runs. It is not the loss of one average
+egg farm.
+
+The standard deviation shows how much total loss varies around the mean. The
+25th–75th percentile band contains the middle half of outcomes and is usually
+easier to use for routine planning than one average. The existing 5th–95th
+percentiles in the CSV give a wider stress-testing range.
+
+For a population view, focus on three measures together:
+
+- **Average farms represented** shows the size of each category.
+- **Average farms lost (%)** shows how many farm sites reach the final lost
+  state, both as a count and as a share of that category.
+- **Mean total loss and its band** show the production capacity exposed across
+  the whole category.
 
 The larger production category will normally show more total loss because it
 contains more farms. Differences in survival between categories are sampling
