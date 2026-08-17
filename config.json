@@ -1,0 +1,38 @@
+{
+  "scenario_metadata": {
+    "name": "New Zealand Spatial Production Risk",
+    "phase_a_label": "Unaffected",
+    "phase_b_label": "Incubating",
+    "phase_c_label": "Active",
+    "phase_d_label": "Lost production capacity",
+    "value_axis_label": "Total production capacity lost",
+    "survival_axis_label": "Average final survival rate (%)",
+    "sheltered_label": "Sheltered",
+    "unsheltered_label": "Unsheltered"
+  },
+  "simulation_controls": {
+    "monte_carlo_iterations": 500,
+    "random_seed": 2026,
+    "initial_phase_c_entities": 3
+  },
+  "model_parameters": {
+    "population_size": 150,
+    "simulation_days": 60,
+    "spatial_decay_factor": 0.025,
+    "incubation_period_days": 4,
+    "active_period_days": 8
+  },
+  "production_metrics": {
+    "average_bird_yield": 1000
+  },
+  "housing_attributes": {
+    "barn_allocation_rate": 0.45,
+    "barn_protection_efficiency": 0.70
+  },
+  "spatial_bounds": {
+    "minimum_longitude": 166.0,
+    "maximum_longitude": 179.0,
+    "minimum_latitude": -47.5,
+    "maximum_latitude": -34.0
+  }
+}

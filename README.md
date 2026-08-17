@@ -9,6 +9,11 @@ It contains two related analyses:
 - a Shiny simulation that starts from selected trucks or clusters and models
   wave-by-wave recruitment of nearby trucks.
 
+It also includes an independent, domain-neutral Monte Carlo engine for spatial
+cascading state transitions. Its labels and parameters come from JSON, allowing
+the same A → B → C → D model to represent biosecurity, urban systems, financial
+risk networks, utility grids, or other spatial scenarios.
+
 North and South Island trucks are always kept separate.
 
 ## Main files
@@ -20,12 +25,15 @@ North and South Island trucks are always kept separate.
 - `truck_analysis_report.qmd` — plain-language Quarto report
 - `truck_analysis_report.html` — rendered self-contained report
 - `data/trucks_clustered.rds` — stable clustered data loaded by the app
+- `spatial_cascade_monte_carlo.R` — generic spatial cascade Monte Carlo engine
+- `config.json` — external parameters and labels for the cascade engine
 
 ## Required R packages
 
 ```r
 install.packages(c(
-  "shiny", "leaflet", "dplyr", "DT", "ggplot2", "cluster", "maps"
+  "shiny", "leaflet", "dplyr", "DT", "ggplot2", "cluster", "maps",
+  "jsonlite"
 ))
 ```
 
@@ -52,6 +60,18 @@ Render the report:
 ```bash
 quarto render truck_analysis_report.qmd
 ```
+
+Run the generic spatial cascade simulation:
+
+```r
+source("spatial_cascade_monte_carlo.R")
+```
+
+Edit `config.json` to change the scenario, population, spatial bounds, phase
+durations, protection settings, production value, and Monte Carlo run count.
+Every run generates a new random geographic layout. The script displays a loss
+distribution and compares final Phase A survival for sheltered and unsheltered
+nodes using base R graphics.
 
 ## Use another dataset
 
