@@ -201,6 +201,9 @@ ui <- fluidPage(
       border-left-color:#E76F51; }
     #cascade_map { height:clamp(390px,calc(100vh - 285px),620px) !important; }
     .legend-note { font-size:10px; color:#687985; margin-top:5px; }
+    .map-size-note { background:rgba(255,255,255,.92); padding:4px 7px;
+      border-radius:4px; color:#435765; font-size:10px; font-weight:600;
+      box-shadow:0 1px 4px rgba(0,0,0,.18); }
     .nav-tabs { margin-bottom:8px; }
     .nav-tabs>li>a { color:#31536a; font-weight:700; padding:7px 14px; }
     .nav-tabs>li.active>a { color:#167d8d; }
@@ -446,7 +449,9 @@ server <- function(input, output, session) {
       ifelse(is.na(result$control_day), "Not selected",
              paste(tools::toTitleCase(result$control_strategy), "on day", result$control_day)),
       ifelse(is.na(result$lost_day), "Not lost", paste("Day", result$lost_day)))
-    radius <- 5 + 5 * sqrt(result$production_yield / max(result$production_yield))
+    # Circle area, rather than radius, is proportional to production capacity.
+    # Because area grows with radius squared, use the square-root transform.
+    radius <- 12 * sqrt(result$production_yield / max(result$production_yield))
     map |>
       addCircleMarkers(lng = result$lon, lat = result$lat,
         radius = radius, color = "white", weight = 1,
@@ -454,6 +459,8 @@ server <- function(input, output, session) {
         popup = popup, label = result$id) |>
       addLegend(position = "bottomright", colors = colours,
         labels = names(colours), title = paste("State on day", day), opacity = 1) |>
+      addControl("Bubble area = production capacity", position = "bottomleft",
+                 className = "map-size-note") |>
       fitBounds(lng1 = config$spatial_bounds$minimum_longitude,
                 lat1 = config$spatial_bounds$minimum_latitude,
                 lng2 = config$spatial_bounds$maximum_longitude,
