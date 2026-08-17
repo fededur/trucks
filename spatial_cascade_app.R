@@ -198,6 +198,11 @@ ui <- fluidPage(
     .control-card .form-group { margin-bottom:8px; }
     .control-card .control-label { font-size:11px; margin-bottom:2px; }
     .parameter-label { cursor:help; border-bottom:1px dotted #6f818d; }
+    .playback-controls { display:grid; grid-template-columns:repeat(3,1fr);
+      gap:5px; margin:-2px 0 7px; }
+    .playback-controls .btn { padding:5px 4px; font-size:11px;
+      font-weight:700; }
+    .playback-speed .form-group { margin-bottom:7px; }
     .btn-primary { background:#e57b25; border-color:#d66d18; font-weight:700; }
     .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
     .loss-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -242,6 +247,17 @@ ui <- fluidPage(
         "Moves the map through the completed scenario. It changes the day shown, but does not rerun the model."), min = 0,
                   max = config$model_parameters$simulation_days,
                   value = config$model_parameters$simulation_days, step = 1),
+      div(class = "playback-controls",
+        actionButton("play_days", "Play", icon = icon("play")),
+        actionButton("pause_days", "Pause", icon = icon("pause")),
+        actionButton("restart_days", "Restart", icon = icon("step-backward"))
+      ),
+      div(class = "playback-speed",
+        selectInput("play_speed", help_label("Playback speed",
+          "Controls how quickly the displayed day advances. Playback uses the existing scenario and does not rerun it."),
+          choices = c("Slow" = 1000, "Normal" = 500, "Fast" = 200),
+          selected = 500)
+      ),
       numericInput("duration", help_label("Scenario duration (days)",
         "The number of days modelled. A longer period gives a transmission chain more time to develop."),
                    config$model_parameters$simulation_days, min = 1, max = 365),
@@ -328,7 +344,7 @@ ui <- fluidPage(
             tags$li("Choose None for a baseline, or Cull and set its coverage and delay."),
             tags$li("Choose a random seed. Reuse the same seed when comparing settings."),
             tags$li("Select Run scenario."),
-            tags$li("Move the day slider to see how the chain develops.")),
+            tags$li("Move the day slider, or use Play, Pause and Restart, to see how the chain develops.")),
           h4("Reading the map"),
           p("Red farms are initially affected at the start of the scenario. Yellow farms become affected as the event spreads. Grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
           h4("Reading the figures"),
@@ -342,11 +358,47 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  playback <- reactiveValues(playing = FALSE,
+                             current_day = config$model_parameters$simulation_days)
+
+  observeEvent(input$display_day, {
+    if (!isTRUE(playback$playing)) playback$current_day <- input$display_day
+  }, ignoreInit = FALSE)
+
+  observeEvent(input$play_days, {
+    max_day <- as.integer(input$duration)
+    playback$current_day <- if (input$display_day >= max_day) 0L else input$display_day
+    updateSliderInput(session, "display_day", value = playback$current_day)
+    playback$playing <- TRUE
+  })
+
+  observeEvent(input$pause_days, {
+    playback$playing <- FALSE
+  })
+
+  observeEvent(input$restart_days, {
+    playback$playing <- FALSE
+    playback$current_day <- 0L
+    updateSliderInput(session, "display_day", value = 0L)
+  })
+
+  observe({
+    req(isTRUE(playback$playing))
+    invalidateLater(as.integer(input$play_speed), session)
+    max_day <- isolate(as.integer(input$duration))
+    next_day <- min(isolate(playback$current_day) + 1L, max_day)
+    playback$current_day <- next_day
+    updateSliderInput(session, "display_day", value = next_day)
+    if (next_day >= max_day) playback$playing <- FALSE
+  })
+
   scenario <- eventReactive(input$run, {
     validate(need(length(input$start_ids) > 0, "Select at least one starting farm."))
     validate(need(input$lambda >= 0, "Spatial decay must be non-negative."))
     updateSliderInput(session, "display_day", max = input$duration,
                       value = input$duration)
+    playback$playing <- FALSE
+    playback$current_day <- as.integer(input$duration)
     run_cascade(
       start_ids = input$start_ids, days = as.integer(input$duration),
       lambda = input$lambda, incubation_days = as.integer(input$incubation),
