@@ -149,11 +149,17 @@ ui <- fluidPage(
     .control-card .control-label { font-size:11px; margin-bottom:2px; }
     .btn-primary { background:#e57b25; border-color:#d66d18; font-weight:700; }
     .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .loss-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:8px; margin-bottom:8px; }
     .kpi { border-left:4px solid #19a0ae; min-height:70px; }
     .kpi-label { color:#6b7b88; text-transform:uppercase; font-size:9px;
       letter-spacing:.5px; font-weight:700; }
     .kpi-value { color:#173b57; font-size:18px; font-weight:700; margin-top:3px; }
-    #cascade_map { height:clamp(430px,calc(100vh - 210px),680px) !important; }
+    .kpi-detail { color:#687985; font-size:9px; font-weight:600; margin-top:2px; }
+    .loss-grid .kpi { min-height:62px; margin-bottom:0; }
+    .loss-grid .kpi:nth-child(2), .loss-grid .kpi:nth-child(3) {
+      border-left-color:#E76F51; }
+    #cascade_map { height:clamp(390px,calc(100vh - 285px),620px) !important; }
     .legend-note { font-size:10px; color:#687985; margin-top:5px; }
     @media(max-width:900px) { .kpi-grid { grid-template-columns:repeat(2,1fr); }
       #cascade_map { height:480px !important; } }
@@ -196,11 +202,12 @@ ui <- fluidPage(
             div(class = "kpi-value", textOutput("reached_kpi", inline = TRUE))),
         div(class = "kpi", div(class = "kpi-label", "Farms in lost state"),
             div(class = "kpi-value", textOutput("lost_kpi", inline = TRUE))),
-        div(class = "kpi", div(class = "kpi-label", "Production capacity lost"),
-            div(class = "kpi-value", textOutput("loss_kpi", inline = TRUE))),
+        div(class = "kpi", div(class = "kpi-label", "Farms not affected"),
+            div(class = "kpi-value", textOutput("unaffected_kpi", inline = TRUE))),
         div(class = "kpi", div(class = "kpi-label", "Displayed day"),
             div(class = "kpi-value", textOutput("day_kpi", inline = TRUE)))
       ),
+      uiOutput("loss_cards"),
       div(class = "panel-card", leafletOutput("cascade_map"))
     )
   )
@@ -238,11 +245,45 @@ server <- function(input, output, session) {
     sum(result$display_group != "Not affected")
   })
   output$lost_kpi <- renderText(sum(day_view()$lost_by_day))
-  output$loss_kpi <- renderText({
-    format(round(sum(day_view()$production_yield[day_view()$lost_by_day])),
-           big.mark = ",")
-  })
+  output$unaffected_kpi <- renderText(
+    sum(day_view()$display_group == "Not affected"))
   output$day_kpi <- renderText(paste("Day", min(input$display_day, input$duration)))
+
+  output$loss_cards <- renderUI({
+    result <- day_view()
+    total_capacity <- sum(result$production_yield)
+    total_lost <- sum(result$production_yield[result$lost_by_day])
+    total_lost_pct <- if (total_capacity > 0) 100 * total_lost / total_capacity else 0
+
+    card <- function(label, value, detail = NULL) {
+      div(class = "kpi",
+          div(class = "kpi-label", label),
+          div(class = "kpi-value", value),
+          if (!is.null(detail)) div(class = "kpi-detail", detail))
+    }
+
+    type_cards <- lapply(sort(unique(result$production_type)), function(type) {
+      rows <- result$production_type == type
+      type_capacity <- sum(result$production_yield[rows])
+      type_lost <- sum(result$production_yield[rows & result$lost_by_day])
+      type_pct <- if (type_capacity > 0) 100 * type_lost / type_capacity else 0
+      card(paste(type, "capacity lost"),
+           format(round(type_lost), big.mark = ","),
+           sprintf("%.1f%% of %s capacity", type_pct, type))
+    })
+
+    div(class = "loss-grid",
+        card("National production capacity",
+             format(round(total_capacity), big.mark = ","),
+             paste(format(nrow(result), big.mark = ","), "farms")),
+        card("National capacity lost",
+             format(round(total_lost), big.mark = ","),
+             "Absolute production capacity"),
+        card("Lost / national capacity",
+             sprintf("%.1f%%", total_lost_pct),
+             "Share of national production capacity"),
+        type_cards)
+  })
 
   output$cascade_map <- renderLeaflet({
     result <- day_view()
