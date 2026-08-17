@@ -64,7 +64,9 @@ boundary_rings <- read_boundary_rings(
 
 run_cascade <- function(start_ids, days, lambda, incubation_days,
                         active_days, shelter_efficiency,
-                        cross_barrier_multiplier, seed) {
+                        cross_barrier_multiplier, control_strategy,
+                        control_coverage, response_delay_days,
+                        isolation_effectiveness, seed) {
   set.seed(seed)
   n <- nrow(farms)
   starts <- match(start_ids, farms$id)
@@ -73,15 +75,34 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
   state <- rep("A", n)
   timer_b <- timer_c <- integer(n)
   reached_day <- lost_day <- rep(NA_integer_, n)
+  active_day <- control_day <- rep(NA_integer_, n)
   parent <- rep(NA_integer_, n)
+  selected_for_control <- controlled <- rep(FALSE, n)
   state[starts] <- "C"
   reached_day[starts] <- 0L
+  active_day[starts] <- 0L
+  if (control_strategy != "none") {
+    selected_for_control[starts] <- runif(length(starts)) <= control_coverage
+    control_day[starts[selected_for_control[starts]]] <- response_delay_days
+  }
 
   same_group <- outer(as.character(farms$barrier_group),
                       as.character(farms$barrier_group), `==`)
   barrier <- ifelse(same_group, 1, cross_barrier_multiplier)
 
   for (day in seq_len(days)) {
+    # Apply the response before today's transmission. Isolation dampens
+    # outgoing transmission; culling stops it and immediately loses capacity.
+    due <- which(state == "C" & selected_for_control & !controlled &
+                   !is.na(control_day) & control_day <= day)
+    if (length(due)) {
+      controlled[due] <- TRUE
+      if (control_strategy == "cull") {
+        state[due] <- "D"
+        lost_day[due] <- day
+      }
+    }
+
     active <- which(state == "C")
     targets <- which(state == "A")
     existing_b <- which(state == "B")
@@ -91,8 +112,11 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
       for (target in targets) {
         raw <- exp(-lambda * distance_matrix[target, active])
         protection <- if (farms$is_sheltered[target]) 1 - shelter_efficiency else 1
+        source_control <- ifelse(
+          controlled[active] & control_strategy == "isolation",
+          1 - isolation_effectiveness, 1)
         source_probability <- pmin(1, pmax(0,
-          raw * protection * barrier[target, active]))
+          raw * protection * barrier[target, active] * source_control))
         combined_probability <- 1 - prod(1 - source_probability)
         if (runif(1) <= combined_probability) {
           successful_source <- sample(active, 1L, prob = source_probability)
@@ -106,7 +130,15 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
     if (length(existing_b)) {
       timer_b[existing_b] <- timer_b[existing_b] + 1L
       new_c <- existing_b[timer_b[existing_b] >= incubation_days]
-      if (length(new_c)) state[new_c] <- "C"
+      if (length(new_c)) {
+        state[new_c] <- "C"
+        active_day[new_c] <- day
+        if (control_strategy != "none") {
+          selected_for_control[new_c] <- runif(length(new_c)) <= control_coverage
+          selected <- new_c[selected_for_control[new_c]]
+          if (length(selected)) control_day[selected] <- day + response_delay_days
+        }
+      }
     }
     if (length(existing_c)) {
       timer_c[existing_c] <- timer_c[existing_c] + 1L
@@ -122,6 +154,11 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
   farm_result$is_start <- seq_len(n) %in% starts
   farm_result$reached_day <- reached_day
   farm_result$lost_day <- lost_day
+  farm_result$active_day <- active_day
+  farm_result$control_day <- control_day
+  farm_result$selected_for_control <- selected_for_control
+  farm_result$controlled <- controlled
+  farm_result$control_strategy <- control_strategy
   farm_result$parent_index <- parent
   farm_result$parent_id <- ifelse(is.na(parent), NA_character_, farms$id[parent])
   farm_result$final_state <- state
@@ -148,7 +185,7 @@ ui <- fluidPage(
     .control-card .form-group { margin-bottom:8px; }
     .control-card .control-label { font-size:11px; margin-bottom:2px; }
     .btn-primary { background:#e57b25; border-color:#d66d18; font-weight:700; }
-    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
     .loss-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
       gap:8px; margin-bottom:8px; }
     .kpi { border-left:4px solid #19a0ae; min-height:70px; }
@@ -190,6 +227,20 @@ ui <- fluidPage(
                   min = 0, max = 1,
                   value = config$model_parameters$cross_barrier_transmission_multiplier,
                   step = .01),
+      radioButtons("control_strategy", "Spread-control policy",
+        choices = c("None" = "none", "Isolation" = "isolation",
+                    "Cull" = "cull"), selected = "none", inline = TRUE),
+      conditionalPanel("input.control_strategy != 'none'",
+        sliderInput("control_coverage", "Farms covered by policy", min = 0,
+                    max = 1, value = .8, step = .05),
+        numericInput("response_delay", "Response delay after active (days)",
+                     value = 1, min = 0, max = 60, step = 1)
+      ),
+      conditionalPanel("input.control_strategy == 'isolation'",
+        sliderInput("isolation_effectiveness",
+                    "Isolation transmission reduction", min = 0,
+                    max = 1, value = .9, step = .05)
+      ),
       numericInput("seed", "Random seed", config$simulation_controls$random_seed,
                    min = 1, step = 1),
       actionButton("run", "Run scenario", class = "btn-primary btn-block"),
@@ -204,6 +255,8 @@ ui <- fluidPage(
             div(class = "kpi-value", textOutput("lost_kpi", inline = TRUE))),
         div(class = "kpi", div(class = "kpi-label", "Farms not affected"),
             div(class = "kpi-value", textOutput("unaffected_kpi", inline = TRUE))),
+        div(class = "kpi", div(class = "kpi-label", "Farms controlled"),
+            div(class = "kpi-value", textOutput("controlled_kpi", inline = TRUE))),
         div(class = "kpi", div(class = "kpi-label", "Displayed day"),
             div(class = "kpi-value", textOutput("day_kpi", inline = TRUE)))
       ),
@@ -225,6 +278,10 @@ server <- function(input, output, session) {
       active_days = as.integer(input$active_period),
       shelter_efficiency = input$protection,
       cross_barrier_multiplier = input$island_multiplier,
+      control_strategy = input$control_strategy,
+      control_coverage = input$control_coverage,
+      response_delay_days = as.integer(input$response_delay),
+      isolation_effectiveness = input$isolation_effectiveness,
       seed = as.integer(input$seed)
     )
   }, ignoreNULL = FALSE)
@@ -247,6 +304,11 @@ server <- function(input, output, session) {
   output$lost_kpi <- renderText(sum(day_view()$lost_by_day))
   output$unaffected_kpi <- renderText(
     sum(day_view()$display_group == "Not affected"))
+  output$controlled_kpi <- renderText({
+    result <- day_view()
+    day <- min(input$display_day, input$duration)
+    sum(result$controlled & !is.na(result$control_day) & result$control_day <= day)
+  })
   output$day_kpi <- renderText(paste("Day", min(input$display_day, input$duration)))
 
   output$loss_cards <- renderUI({
@@ -316,11 +378,13 @@ server <- function(input, output, session) {
     }
 
     popup <- sprintf(
-      "<b>%s</b><br>%s<br>%s<br>Production: %s<br>Sheltered: %s<br>Reached: %s<br>Lost: %s",
+      "<b>%s</b><br>%s<br>%s<br>Production: %s<br>Sheltered: %s<br>Reached: %s<br>Control: %s<br>Lost: %s",
       result$id, result$region, result$production_type,
       format(round(result$production_yield), big.mark = ","),
       ifelse(result$is_sheltered, "Yes", "No"),
       ifelse(is.na(result$reached_day), "Not reached", paste("Day", result$reached_day)),
+      ifelse(is.na(result$control_day), "Not selected",
+             paste(tools::toTitleCase(result$control_strategy), "on day", result$control_day)),
       ifelse(is.na(result$lost_day), "Not lost", paste("Day", result$lost_day)))
     radius <- 5 + 5 * sqrt(result$production_yield / max(result$production_yield))
     map |>
