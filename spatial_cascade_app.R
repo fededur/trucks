@@ -167,6 +167,12 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
 farm_choices <- setNames(farms$id, paste(farms$id, farms$region,
                                           farms$production_type, sep = " | "))
 default_lambda <- config$model_parameters$spatial_decay_factor
+meta <- config$scenario_metadata
+PRODUCTION_TYPE_LABEL <- meta$production_type_label %||% "Production type"
+REGION_LABEL <- meta$region_label %||% "Region"
+SHELTER_CATEGORY_LABEL <- meta$shelter_category_label %||% "Shelter category"
+SHELTERED_LABEL <- meta$sheltered_label %||% "Sheltered"
+UNSHELTERED_LABEL <- meta$unsheltered_label %||% "Unsheltered"
 help_label <- function(text, note) {
   tags$span(text, class = "parameter-label", title = note)
 }
@@ -440,15 +446,24 @@ server <- function(input, output, session) {
       }
     }
 
+    shelter_category <- ifelse(result$is_sheltered,
+                               SHELTERED_LABEL, UNSHELTERED_LABEL)
     popup <- sprintf(
-      "<b>%s</b><br>%s<br>%s<br>Production: %s<br>Sheltered: %s<br>Reached: %s<br>Control: %s<br>Lost: %s",
-      result$id, result$region, result$production_type,
+      "<b>%s</b><br>%s: %s<br>%s: %s<br>%s: %s<br>Production capacity: %s<br>Reached: %s<br>Control: %s<br>Lost: %s",
+      result$id, REGION_LABEL, result$region,
+      PRODUCTION_TYPE_LABEL, result$production_type,
+      SHELTER_CATEGORY_LABEL, shelter_category,
       format(round(result$production_yield), big.mark = ","),
-      ifelse(result$is_sheltered, "Yes", "No"),
       ifelse(is.na(result$reached_day), "Not reached", paste("Day", result$reached_day)),
       ifelse(is.na(result$control_day), "Not selected",
              paste(tools::toTitleCase(result$control_strategy), "on day", result$control_day)),
       ifelse(is.na(result$lost_day), "Not lost", paste("Day", result$lost_day)))
+    hover_label <- sprintf(
+      "<b>%s</b><br>%s: %s<br>%s: %s<br>%s: %s<br>Production capacity: %s",
+      result$id, REGION_LABEL, result$region,
+      PRODUCTION_TYPE_LABEL, result$production_type,
+      SHELTER_CATEGORY_LABEL, shelter_category,
+      format(round(result$production_yield), big.mark = ","))
     # Circle area, rather than radius, is proportional to production capacity.
     # Because area grows with radius squared, use the square-root transform.
     radius <- 12 * sqrt(result$production_yield / max(result$production_yield))
@@ -456,7 +471,9 @@ server <- function(input, output, session) {
       addCircleMarkers(lng = result$lon, lat = result$lat,
         radius = radius, color = "white", weight = 1,
         fillColor = unname(colours[result$display_group]), fillOpacity = .9,
-        popup = popup, label = result$id) |>
+        popup = popup, label = lapply(hover_label, htmltools::HTML),
+        labelOptions = labelOptions(direction = "auto", textsize = "12px",
+                                    opacity = .96)) |>
       addLegend(position = "bottomright", colors = colours,
         labels = names(colours), title = paste("State on day", day), opacity = 1) |>
       addControl("Bubble area = production capacity", position = "bottomleft",

@@ -6,6 +6,8 @@
     "phase_c_label": "Active",
     "phase_d_label": "Lost production capacity",
     "production_type_label": "Production type",
+    "region_label": "Region",
+    "shelter_category_label": "Shelter category",
     "value_axis_label": "Total production capacity lost",
     "survival_axis_label": "Average final survival rate (%)",
     "sheltered_label": "Sheltered",
