@@ -27,11 +27,11 @@ The app colours initiating farms, farms reached through the chain, and farms
 not affected. This app supports scenario exploration; use
 `spatial_cascade_monte_carlo.R` for probability estimates across many runs.
 
-The app also supports a response policy. `Isolation` reduces outgoing
-transmission from covered farms after a response delay. `Cull` stops outgoing
-transmission but counts the culled farm's production capacity as lost. Policy
-coverage represents the proportion of active farms that can be reached by the
-response programme. `None` provides the no-policy comparison.
+The app also supports a culling response policy. `Cull` stops outgoing
+transmission from a covered farm after the response delay but counts that
+farm's production capacity as lost. Policy coverage represents the proportion
+of active farms that can be reached by the response programme. `None` provides
+the no-policy comparison.
 
 North and South Island trucks are always kept separate.
 

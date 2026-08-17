@@ -66,7 +66,7 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
                         active_days, shelter_efficiency,
                         cross_barrier_multiplier, control_strategy,
                         control_coverage, response_delay_days,
-                        isolation_effectiveness, seed) {
+                        seed) {
   set.seed(seed)
   n <- nrow(farms)
   starts <- match(start_ids, farms$id)
@@ -91,16 +91,14 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
   barrier <- ifelse(same_group, 1, cross_barrier_multiplier)
 
   for (day in seq_len(days)) {
-    # Apply the response before today's transmission. Isolation dampens
-    # outgoing transmission; culling stops it and immediately loses capacity.
+    # Apply culling before today's transmission. It stops outgoing
+    # transmission and immediately counts the farm's capacity as lost.
     due <- which(state == "C" & selected_for_control & !controlled &
                    !is.na(control_day) & control_day <= day)
     if (length(due)) {
       controlled[due] <- TRUE
-      if (control_strategy == "cull") {
-        state[due] <- "D"
-        lost_day[due] <- day
-      }
+      state[due] <- "D"
+      lost_day[due] <- day
     }
 
     active <- which(state == "C")
@@ -112,11 +110,8 @@ run_cascade <- function(start_ids, days, lambda, incubation_days,
       for (target in targets) {
         raw <- exp(-lambda * distance_matrix[target, active])
         protection <- if (farms$is_sheltered[target]) 1 - shelter_efficiency else 1
-        source_control <- ifelse(
-          controlled[active] & control_strategy == "isolation",
-          1 - isolation_effectiveness, 1)
         source_probability <- pmin(1, pmax(0,
-          raw * protection * barrier[target, active] * source_control))
+          raw * protection * barrier[target, active]))
         combined_probability <- 1 - prod(1 - source_probability)
         if (runif(1) <= combined_probability) {
           successful_source <- sample(active, 1L, prob = source_probability)
@@ -228,18 +223,13 @@ ui <- fluidPage(
                   value = config$model_parameters$cross_barrier_transmission_multiplier,
                   step = .01),
       radioButtons("control_strategy", "Spread-control policy",
-        choices = c("None" = "none", "Isolation" = "isolation",
-                    "Cull" = "cull"), selected = "none", inline = TRUE),
-      conditionalPanel("input.control_strategy != 'none'",
+        choices = c("None" = "none", "Cull" = "cull"),
+        selected = "none", inline = TRUE),
+      conditionalPanel("input.control_strategy == 'cull'",
         sliderInput("control_coverage", "Farms covered by policy", min = 0,
                     max = 1, value = .8, step = .05),
         numericInput("response_delay", "Response delay after active (days)",
                      value = 1, min = 0, max = 60, step = 1)
-      ),
-      conditionalPanel("input.control_strategy == 'isolation'",
-        sliderInput("isolation_effectiveness",
-                    "Isolation transmission reduction", min = 0,
-                    max = 1, value = .9, step = .05)
       ),
       numericInput("seed", "Random seed", config$simulation_controls$random_seed,
                    min = 1, step = 1),
@@ -281,7 +271,6 @@ server <- function(input, output, session) {
       control_strategy = input$control_strategy,
       control_coverage = input$control_coverage,
       response_delay_days = as.integer(input$response_delay),
-      isolation_effectiveness = input$isolation_effectiveness,
       seed = as.integer(input$seed)
     )
   }, ignoreNULL = FALSE)
