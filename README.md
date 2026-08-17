@@ -18,6 +18,15 @@ The farm-risk map includes New Zealand boundaries. Set
 `map_options.show_region_boundaries` in `config.json` to `true` or `false` to
 show or hide regional council outlines without changing the simulation.
 
+## Interactive fixed-farm cascade app
+
+Run `shiny::runApp("spatial_cascade_app.R")` to explore one fixed-farm
+scenario. Select one or more initiating farms, adjust transmission and timing
+assumptions, run the scenario, and move the day slider to inspect the chain.
+The app colours initiating farms, farms reached through the chain, and farms
+not affected. This app supports scenario exploration; use
+`spatial_cascade_monte_carlo.R` for probability estimates across many runs.
+
 North and South Island trucks are always kept separate.
 
 ## Main files
