@@ -28,6 +28,8 @@ PHASE_A_LABEL <- config$scenario_metadata$phase_a_label
 PHASE_B_LABEL <- config$scenario_metadata$phase_b_label
 PHASE_C_LABEL <- config$scenario_metadata$phase_c_label
 PHASE_D_LABEL <- config$scenario_metadata$phase_d_label
+PRODUCTION_TYPE_LABEL <- config$scenario_metadata$production_type_label %||%
+  "Production type"
 
 # Optional labels have generic fallbacks, keeping older configuration files
 # valid if presentation metadata is not supplied.
@@ -45,6 +47,17 @@ MIN_LON <- config$spatial_bounds$minimum_longitude %||% 166
 MAX_LON <- config$spatial_bounds$maximum_longitude %||% 179
 MIN_LAT <- config$spatial_bounds$minimum_latitude %||% -47.5
 MAX_LAT <- config$spatial_bounds$maximum_latitude %||% -34
+
+# Production type is a reporting category only. It is deliberately absent
+# from the transmission and timing equations below.
+production_type_config <- config$production_metrics$production_types
+if (!is.data.frame(production_type_config) ||
+    !all(c("type", "allocation_rate") %in% names(production_type_config))) {
+  stop("production_metrics.production_types must contain type and allocation_rate.",
+       call. = FALSE)
+}
+PRODUCTION_TYPES <- as.character(production_type_config$type)
+PRODUCTION_TYPE_RATES <- as.numeric(production_type_config$allocation_rate)
 
 # ---- Configuration validation ----------------------------------------------
 assert_scalar <- function(value, name, lower = -Inf, upper = Inf,
@@ -79,6 +92,15 @@ assert_scalar(MAX_LAT, "maximum_latitude", -90, 90)
 if (MIN_LON >= MAX_LON || MIN_LAT >= MAX_LAT) {
   stop("Spatial minimum bounds must be below maximum bounds.", call. = FALSE)
 }
+if (any(!nzchar(PRODUCTION_TYPES)) || anyDuplicated(PRODUCTION_TYPES)) {
+  stop("Production type names must be non-empty and unique.", call. = FALSE)
+}
+if (any(!is.finite(PRODUCTION_TYPE_RATES)) ||
+    any(PRODUCTION_TYPE_RATES < 0) ||
+    abs(sum(PRODUCTION_TYPE_RATES) - 1) > 1e-8) {
+  stop("Production type allocation rates must be non-negative and sum to 1.",
+       call. = FALSE)
+}
 
 required_labels <- c(PHASE_A_LABEL, PHASE_B_LABEL, PHASE_C_LABEL,
                      PHASE_D_LABEL, SCENARIO_NAME)
@@ -107,6 +129,16 @@ set.seed(as.integer(RANDOM_SEED))
 production_loss_log <- numeric(MONTE_CARLO_RUNS)
 sheltered_survival_log <- numeric(MONTE_CARLO_RUNS)
 unsheltered_survival_log <- numeric(MONTE_CARLO_RUNS)
+production_loss_by_type_log <- matrix(
+  0, nrow = MONTE_CARLO_RUNS, ncol = length(PRODUCTION_TYPES),
+  dimnames = list(NULL, PRODUCTION_TYPES)
+)
+survival_by_type_and_shelter_log <- array(
+  NA_real_,
+  dim = c(MONTE_CARLO_RUNS, length(PRODUCTION_TYPES), 2L),
+  dimnames = list(NULL, PRODUCTION_TYPES,
+                  c(SHELTERED_LABEL, UNSHELTERED_LABEL))
+)
 
 for (sim in seq_len(MONTE_CARLO_RUNS)) {
   # A brand-new spatial population is generated for every Monte Carlo run.
@@ -125,6 +157,10 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
     timer_phase_b = integer(POPULATION_SIZE),
     timer_phase_c = integer(POPULATION_SIZE),
     is_sheltered = sheltered_assignment,
+    production_type = sample(
+      PRODUCTION_TYPES, POPULATION_SIZE, replace = TRUE,
+      prob = PRODUCTION_TYPE_RATES
+    ),
     production_yield = pmax(
       0,
       rnorm(POPULATION_SIZE, mean = BASE_YIELD, sd = BASE_YIELD * 0.15)
@@ -217,6 +253,24 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
     nodes$production_yield[nodes$current_state == "D"]
   )
 
+  for (type_name in PRODUCTION_TYPES) {
+    type_rows <- nodes$production_type == type_name
+    production_loss_by_type_log[sim, type_name] <- sum(
+      nodes$production_yield[type_rows & nodes$current_state == "D"]
+    )
+    for (shelter_name in c(SHELTERED_LABEL, UNSHELTERED_LABEL)) {
+      shelter_value <- identical(shelter_name, SHELTERED_LABEL)
+      group_rows <- type_rows & nodes$is_sheltered == shelter_value
+      group_total <- sum(group_rows)
+      survival_by_type_and_shelter_log[sim, type_name, shelter_name] <-
+        if (group_total > 0L) {
+          100 * sum(group_rows & nodes$current_state == "A") / group_total
+        } else {
+          NA_real_
+        }
+    }
+  }
+
   sheltered_total <- sum(nodes$is_sheltered)
   unsheltered_total <- sum(!nodes$is_sheltered)
   sheltered_survival_log[sim] <- if (sheltered_total > 0L) {
@@ -247,6 +301,8 @@ simulation_results <- list(
   sheltered_survival_log = sheltered_survival_log,
   unsheltered_survival_log = unsheltered_survival_log,
   average_survival = average_survival,
+  production_loss_by_type_log = production_loss_by_type_log,
+  survival_by_type_and_shelter_log = survival_by_type_and_shelter_log,
   phase_labels = c(A = PHASE_A_LABEL, B = PHASE_B_LABEL,
                    C = PHASE_C_LABEL, D = PHASE_D_LABEL)
 )
@@ -257,12 +313,16 @@ saveRDS(simulation_results,
         file.path(assets_dir, "spatial_cascade_results.rds"))
 
 loss_data <- data.frame(production_loss = production_loss_log)
-survival_data <- data.frame(
-  protection_group = factor(
-    names(average_survival), levels = names(average_survival)
-  ),
-  survival_rate = as.numeric(average_survival)
+type_loss_data <- as.data.frame(as.table(production_loss_by_type_log))
+names(type_loss_data) <- c("simulation_run", "production_type",
+                           "production_loss")
+
+average_type_survival <- apply(
+  survival_by_type_and_shelter_log, c(2, 3), mean, na.rm = TRUE
 )
+type_survival_data <- as.data.frame(as.table(average_type_survival))
+names(type_survival_data) <- c("production_type", "protection_group",
+                               "survival_rate")
 
 professional_theme <- theme_minimal(base_size = 12) +
   theme(
@@ -296,29 +356,58 @@ loss_plot <- ggplot(loss_data, aes(x = production_loss)) +
   professional_theme
 
 survival_plot <- ggplot(
-  survival_data,
-  aes(x = protection_group, y = survival_rate, fill = protection_group)
+  type_survival_data,
+  aes(x = production_type, y = survival_rate, fill = protection_group)
 ) +
-  geom_col(width = 0.62) +
+  geom_col(position = position_dodge(width = 0.72), width = 0.66) +
   geom_text(
     aes(label = sprintf("%.1f%%", survival_rate)),
-    vjust = -0.5, fontface = "bold", colour = "#173B57"
+    position = position_dodge(width = 0.72), vjust = -0.5,
+    fontface = "bold", colour = "#173B57", size = 3.5
   ) +
-  scale_fill_manual(values = c("#3B9AB2", "#F28E2B")) +
+  scale_fill_manual(values = c("#3B9AB2", "#F28E2B"),
+                    name = "Protection group") +
   scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 20),
                      expand = expansion(mult = c(0, 0.04))) +
   labs(
     title = paste("Average final", PHASE_A_LABEL, "rate"),
-    subtitle = paste("Comparison by protective attribute across",
+    subtitle = paste("Reporting split by production type across",
                      format(MONTE_CARLO_RUNS, big.mark = ","), "runs"),
-    x = NULL,
+    x = PRODUCTION_TYPE_LABEL,
     y = SURVIVAL_AXIS_LABEL
+  ) +
+  professional_theme +
+  theme(legend.position = "top")
+
+type_loss_plot <- ggplot(
+  type_loss_data,
+  aes(x = production_type, y = production_loss, fill = production_type)
+) +
+  geom_boxplot(width = 0.62, outlier.alpha = 0.25, linewidth = 0.4) +
+  scale_fill_manual(
+    values = setNames(
+      grDevices::hcl.colors(length(PRODUCTION_TYPES), "Dark 3"),
+      PRODUCTION_TYPES
+    )
+  ) +
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",",
+                                                 scientific = FALSE)) +
+  labs(
+    title = "Production capacity lost by production type",
+    subtitle = "Categories describe outcomes only; they do not change transmission",
+    x = PRODUCTION_TYPE_LABEL,
+    y = VALUE_AXIS_LABEL
   ) +
   professional_theme
 
 ggsave(
   file.path(assets_dir, "spatial_cascade_loss_distribution.svg"),
   loss_plot, device = grDevices::svg, width = 9, height = 6, units = "in",
+  bg = "white"
+)
+ggsave(
+  file.path(assets_dir, "spatial_cascade_loss_by_production_type.svg"),
+  type_loss_plot, device = grDevices::svg, width = 8, height = 6, units = "in",
   bg = "white"
 )
 ggsave(
@@ -344,9 +433,31 @@ write.csv(summary_table,
           file.path(assets_dir, "spatial_cascade_summary.csv"),
           row.names = FALSE)
 
+production_type_summary <- do.call(rbind, lapply(PRODUCTION_TYPES, function(type_name) {
+  type_losses <- production_loss_by_type_log[, type_name]
+  data.frame(
+    production_type = type_name,
+    configured_allocation_rate =
+      PRODUCTION_TYPE_RATES[match(type_name, PRODUCTION_TYPES)],
+    mean_production_loss = mean(type_losses),
+    median_production_loss = median(type_losses),
+    loss_p05 = unname(quantile(type_losses, 0.05)),
+    loss_p95 = unname(quantile(type_losses, 0.95)),
+    sheltered_survival_pct = average_type_survival[type_name, SHELTERED_LABEL],
+    unsheltered_survival_pct = average_type_survival[type_name, UNSHELTERED_LABEL],
+    stringsAsFactors = FALSE
+  )
+}))
+write.csv(
+  production_type_summary,
+  file.path(assets_dir, "spatial_cascade_production_type_summary.csv"),
+  row.names = FALSE
+)
+
 if (interactive()) {
   print(loss_plot)
   print(survival_plot)
+  print(type_loss_plot)
 }
 
 invisible(simulation_results)

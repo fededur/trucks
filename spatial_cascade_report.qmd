@@ -17,12 +17,18 @@ execute:
 config <- jsonlite::fromJSON("config.json")
 results <- readRDS("assets/spatial_cascade_results.rds")
 summary <- read.csv("assets/spatial_cascade_summary.csv")
+type_summary <- read.csv("assets/spatial_cascade_production_type_summary.csv")
 
 population <- config$model_parameters$population_size
 runs <- config$simulation_controls$monte_carlo_iterations
 days <- config$model_parameters$simulation_days
 allocation <- 100 * config$housing_attributes$barn_allocation_rate
 protection <- 100 * config$housing_attributes$barn_protection_efficiency
+type_mix <- paste(
+  paste0(config$production_metrics$production_types$type, " ",
+         round(100 * config$production_metrics$production_types$allocation_rate), "%"),
+  collapse = ", "
+)
 total_average_capacity <- population *
   config$production_metrics$average_bird_yield
 mean_loss_share <- 100 * summary$mean_production_loss / total_average_capacity
@@ -42,6 +48,10 @@ range of plausible outcomes. It is not a forecast for a specific real event.
 
 Each simulation creates `r population` nodes at new random locations. Three
 nodes begin in the active state. The model then runs for `r days` days.
+
+Each node is also assigned a production type using the configured mix
+(`r type_mix`). Production type is used only to split the reported results. It
+does not change distance, transmission, protection or phase timing.
 
 Every node moves through four stages:
 
@@ -70,8 +80,6 @@ The spread of the histogram is strategically important: one average number does
 not capture the risk. Planning should allow for outcomes toward the upper end,
 not only the centre of the distribution.
 
-![](assets/spatial_cascade_survival_comparison.svg){fig-alt="Average final survival comparison for sheltered and unsheltered nodes"}
-
 Sheltered nodes finished unaffected in
 **`r round(summary$sheltered_survival_pct, 1)`%** of cases on average, compared
 with **`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered nodes.
@@ -85,11 +93,45 @@ the current `r round(allocation)`% allocation rate. That decision should be
 tested with realistic protection costs and real locations before operational
 use.
 
+## Results by production type
+
+![](assets/spatial_cascade_loss_by_production_type.svg){fig-alt="Production loss distributions split by production type"}
+
+```{r}
+#| label: production-type-table
+#| tbl-cap: "Average results by production type"
+display_type <- type_summary[, c(
+  "production_type", "configured_allocation_rate", "mean_production_loss",
+  "sheltered_survival_pct", "unsheltered_survival_pct"
+)]
+display_type$configured_allocation_rate <-
+  paste0(round(100 * display_type$configured_allocation_rate), "%")
+display_type$mean_production_loss <-
+  format(round(display_type$mean_production_loss), big.mark = ",")
+display_type$sheltered_survival_pct <-
+  round(display_type$sheltered_survival_pct, 1)
+display_type$unsheltered_survival_pct <-
+  round(display_type$unsheltered_survival_pct, 1)
+names(display_type) <- c(
+  "Production type", "Configured share", "Average loss",
+  "Sheltered survival (%)", "Unsheltered survival (%)"
+)
+knitr::kable(display_type, row.names = FALSE)
+```
+
+The larger production category will normally show more total loss because it
+contains more nodes. Differences in survival between categories are sampling
+variation, not a different transmission rule. The main strategic comparison
+remains sheltered versus unsheltered within each category.
+
+![](assets/spatial_cascade_survival_comparison.svg){fig-alt="Sheltered and unsheltered survival split by production type"}
+
 ## How to use it
 
 1. Edit `config.json`.
 2. Set the scenario labels, population, duration, spatial decay, phase timing,
-   node value, allocation rate, protection efficiency and map bounds.
+   node value, production-type names and shares, allocation rate, protection
+   efficiency and map bounds. Production-type shares must sum to 1.
 3. Run:
 
 ```{r}

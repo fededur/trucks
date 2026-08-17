@@ -70,7 +70,9 @@ source("spatial_cascade_monte_carlo.R")
 ```
 
 Edit `config.json` to change the scenario, population, spatial bounds, phase
-durations, protection settings, production value, and Monte Carlo run count.
+durations, protection settings, production value, production-type categories,
+and Monte Carlo run count. Production type is a reporting split only and does
+not alter transmission.
 Every run generates a new random geographic layout. The script saves ggplot2
 SVG charts showing the loss distribution and sheltered versus unsheltered final
 Phase A survival under `assets/`.

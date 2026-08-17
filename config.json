@@ -5,6 +5,7 @@
     "phase_b_label": "Incubating",
     "phase_c_label": "Active",
     "phase_d_label": "Lost production capacity",
+    "production_type_label": "Production type",
     "value_axis_label": "Total production capacity lost",
     "survival_axis_label": "Average final survival rate (%)",
     "sheltered_label": "Sheltered",
@@ -23,7 +24,17 @@
     "active_period_days": 8
   },
   "production_metrics": {
-    "average_bird_yield": 1000
+    "average_bird_yield": 1000,
+    "production_types": [
+      {
+        "type": "Eggs",
+        "allocation_rate": 0.55
+      },
+      {
+        "type": "Meat",
+        "allocation_rate": 0.45
+      }
+    ]
   },
   "housing_attributes": {
     "barn_allocation_rate": 0.45,
