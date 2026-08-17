@@ -172,7 +172,9 @@ estimate.
 ![](assets/spatial_cascade_farm_risk_map.svg){fig-alt="Fixed farm locations coloured by probability of reaching the lost state"}
 
 The map shows both North and South Island farms together, without separate
-panels. **Each point is one fixed farm** at its actual longitude and latitude.
+panels. The grey shape is New Zealand and, when enabled, the fine grey lines
+show regional council boundaries. **Each point is one fixed farm** at its
+actual longitude and latitude.
 Point size represents that farm's production capacity. Point colour represents
 the percentage of all Monte Carlo runs in which that farm reached **Lost
 production capacity** by the end of the scenario.
@@ -223,6 +225,14 @@ such as ferry movements, shared equipment or supplier links. This single
 multiplier is a planning simplification. For operational work, known movement
 routes and biosecurity controls should be represented directly where data are
 available.
+
+## Map boundary option
+
+The map uses the official Stats NZ 2025 regional council boundary file stored
+in `data/nz_regional_council_2025.geojson`. In `config.json`, set
+`map_options.show_region_boundaries` to `true` to show region outlines or
+`false` to retain the New Zealand land shape without the internal region lines.
+This setting changes only the presentation; it does not change transmission.
 
 ## How to use it
 

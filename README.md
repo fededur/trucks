@@ -14,6 +14,10 @@ cascading state transitions. Its labels and parameters come from JSON, allowing
 the same A → B → C → D model to represent biosecurity, urban systems, financial
 risk networks, utility grids, or other spatial scenarios.
 
+The farm-risk map includes New Zealand boundaries. Set
+`map_options.show_region_boundaries` in `config.json` to `true` or `false` to
+show or hide regional council outlines without changing the simulation.
+
 North and South Island trucks are always kept separate.
 
 ## Main files

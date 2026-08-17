@@ -38,6 +38,12 @@ START_MODE <- config$simulation_controls$starting_location_mode %||% "random"
 ITERATIONS_PER_START <- config$simulation_controls$iterations_per_starting_farm %||% 25L
 INPUT_FILE <- config$input_data$file %||% "data/farms.csv"
 COLUMN_MAP <- unlist(config$input_data$column_mappings, use.names = TRUE)
+BOUNDARY_FILE <- config$map_options$boundary_file %||%
+  "data/nz_regional_council_2025.geojson"
+SHOW_REGION_BOUNDARIES <- config$map_options$show_region_boundaries %||% FALSE
+if (!is.logical(SHOW_REGION_BOUNDARIES) || length(SHOW_REGION_BOUNDARIES) != 1L) {
+  stop("map_options.show_region_boundaries must be true or false.")
+}
 
 assert_number <- function(x, name, lower = -Inf, integer = FALSE) {
   ok <- is.numeric(x) && length(x) == 1L && is.finite(x) && x >= lower
@@ -64,6 +70,34 @@ haversine_distance <- function(lon1, lat1, lon2, lat2) {
   dphi <- (lat2 - lat1) * rad; dlambda <- (lon2 - lon1) * rad
   a <- sin(dphi / 2)^2 + cos(phi1) * cos(phi2) * sin(dlambda / 2)^2
   2 * r * atan2(sqrt(a), sqrt(pmax(0, 1 - a)))
+}
+
+# Convert Polygon and MultiPolygon GeoJSON into a plain data frame for
+# ggplot2. This keeps map drawing free of additional spatial dependencies.
+read_geojson_polygons <- function(path) {
+  if (!file.exists(path)) stop("Map boundary file not found: ", path)
+  geo <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+  rows <- list(); group_id <- 0L
+  add_polygon <- function(polygon, region_name) {
+    for (ring in polygon) {
+      group_id <<- group_id + 1L
+      xy <- do.call(rbind, ring)
+      rows[[length(rows) + 1L]] <<- data.frame(
+        lon = as.numeric(xy[, 1]), lat = as.numeric(xy[, 2]),
+        group = group_id, region = region_name, stringsAsFactors = FALSE)
+    }
+  }
+  for (feature in geo$features) {
+    region_name <- unlist(feature$properties, use.names = FALSE)[1] %||% "Region"
+    geometry <- feature$geometry
+    if (identical(geometry$type, "Polygon")) {
+      add_polygon(geometry$coordinates, region_name)
+    } else if (identical(geometry$type, "MultiPolygon")) {
+      for (polygon in geometry$coordinates) add_polygon(polygon, region_name)
+    }
+  }
+  if (!length(rows)) stop("No polygon geometry found in: ", path)
+  do.call(rbind, rows)
 }
 
 # Load and standardise the fixed farm table.
@@ -229,8 +263,19 @@ survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = pro
   geom_col(position = position_dodge(.72), width = .66) + geom_text(aes(label = sprintf("%.1f%%", survival)), position = position_dodge(.72), vjust = -.4) +
   scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Protection") + scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04))) +
   labs(title = paste("Average final", PHASE_A_LABEL, "rate"), subtitle = "Fixed farms, split by production type and shelter", x = PRODUCTION_TYPE_LABEL, y = SURVIVAL_AXIS_LABEL) + report_theme + theme(legend.position = "top")
-farm_risk_plot <- ggplot(farm_risk, aes(lon, lat, colour = probability_lost_pct, size = production_yield)) +
-  geom_point(alpha = .82) + coord_quickmap() +
+nz_boundaries <- read_geojson_polygons(BOUNDARY_FILE)
+boundary_line_colour <- if (SHOW_REGION_BOUNDARIES) "#87929A" else NA
+farm_risk_plot <- ggplot() +
+  geom_polygon(data = nz_boundaries, aes(lon, lat, group = group),
+    fill = "#E5E7E9", colour = boundary_line_colour, linewidth = .25) +
+  geom_point(data = farm_risk,
+    aes(lon, lat, colour = probability_lost_pct, size = production_yield),
+    alpha = .82) +
+  coord_quickmap(xlim = c(config$spatial_bounds$minimum_longitude,
+                         config$spatial_bounds$maximum_longitude),
+                 ylim = c(config$spatial_bounds$minimum_latitude,
+                          config$spatial_bounds$maximum_latitude),
+                 expand = FALSE) +
   scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
   scale_size_area(max_size = 6, name = "Production") + labs(title = "Farm-level probability of reaching the lost state", subtitle = "Conditional on the configured starting-location mode", x = "Longitude", y = "Latitude") + report_theme + theme(legend.position = "right")
 

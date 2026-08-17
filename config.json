@@ -61,5 +61,9 @@
     "maximum_longitude": 179.0,
     "minimum_latitude": -47.5,
     "maximum_latitude": -34.0
+  },
+  "map_options": {
+    "boundary_file": "data/nz_regional_council_2025.geojson",
+    "show_region_boundaries": true
   }
 }
