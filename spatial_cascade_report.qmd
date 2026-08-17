@@ -19,7 +19,8 @@ results <- readRDS("assets/spatial_cascade_results.rds")
 summary <- read.csv("assets/spatial_cascade_summary.csv")
 type_summary <- read.csv("assets/spatial_cascade_production_type_summary.csv")
 
-population <- config$model_parameters$population_size
+population <- results$population_size
+population_source <- results$population_size_source
 runs <- config$simulation_controls$monte_carlo_iterations
 days <- config$model_parameters$simulation_days
 allocation <- 100 * config$housing_attributes$barn_allocation_rate
@@ -53,7 +54,8 @@ farm. Each farm has:
 - a sheltered or unsheltered housing status; and
 - an amount of production that could be lost.
 
-The current example uses `r population` farms. Average production is represented
+The current example uses `r population` farms. The population size comes from
+**`r population_source`**. Average production is represented
 by a value of `r format(config$production_metrics$average_bird_yield, big.mark = ",")`
 per farm. This value could mean birds, tonnes, trays of eggs, revenue or another
 useful capacity measure, as long as the same unit is used for every farm.
@@ -172,7 +174,7 @@ display_type$unsheltered_survival_pct <-
 names(display_type) <- c(
   "Production type", "Configured share", "Average farms represented",
   "Average farms lost (%)", "Mean total loss", "Loss SD",
-  "25th–75th percentile loss",
+  "25th to 75th percentile loss",
   "Sheltered survival (%)", "Unsheltered survival (%)"
 )
 knitr::kable(display_type, row.names = FALSE)
@@ -184,8 +186,8 @@ scenario, averaged across the `r runs` runs. It is not the loss of one average
 egg farm.
 
 The standard deviation shows how much total loss varies around the mean. The
-25th–75th percentile band contains the middle half of outcomes and is usually
-easier to use for routine planning than one average. The existing 5th–95th
+25th to 75th percentile band contains the middle half of outcomes and is usually
+easier to use for routine planning than one average. The existing 5th to 95th
 percentiles in the CSV give a wider stress-testing range.
 
 For a population view, focus on three measures together:
@@ -206,7 +208,9 @@ remains sheltered versus unsheltered within each category.
 ## How to use it
 
 1. Edit `config.json`.
-2. Set the number of farms and simulation days.
+2. Set the number of farms and simulation days. To use the number of rows in a
+   farm CSV instead, set `use_row_count_for_population_size` to `true` and set
+   `input_data.file` to the CSV path. Only the row count is used.
 3. Set the map area and how quickly risk falls with distance.
 4. Set the incubation and active periods.
 5. Set average production per farm, production types and their shares.

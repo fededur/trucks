@@ -73,6 +73,12 @@ Edit `config.json` to change the scenario, population, spatial bounds, phase
 durations, protection settings, production value, production-type categories,
 and Monte Carlo run count. Production type is a reporting split only and does
 not alter transmission.
+
+By default, population size comes from `model_parameters.population_size`. To
+use the number of rows in a farm dataset, set
+`input_data.use_row_count_for_population_size` to `true` and save the CSV at the
+configured `input_data.file` path. Only its row count is used; the Monte Carlo
+engine still generates new random coordinates and attributes for every run.
 Every run generates a new random geographic layout. The script saves ggplot2
 SVG charts showing the loss distribution and sheltered versus unsheltered final
 Phase A survival under `assets/`.

@@ -16,6 +16,10 @@
     "random_seed": 2026,
     "initial_phase_c_entities": 3
   },
+  "input_data": {
+    "use_row_count_for_population_size": false,
+    "file": "data/farms_input.csv"
+  },
   "model_parameters": {
     "population_size": 150,
     "simulation_days": 60,

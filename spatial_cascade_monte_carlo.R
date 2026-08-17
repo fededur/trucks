@@ -22,6 +22,27 @@ BASE_YIELD <- config$production_metrics$average_bird_yield
 ALLOC_RATE <- config$housing_attributes$barn_allocation_rate
 PROT_EFFICIENCY <- config$housing_attributes$barn_protection_efficiency
 
+# Optionally take the population size from the number of rows in a farm CSV.
+# Only the row count is used here; all simulated coordinates and attributes are
+# still regenerated for every Monte Carlo run.
+USE_INPUT_POPULATION_SIZE <-
+  config$input_data$use_row_count_for_population_size %||% FALSE
+INPUT_DATA_FILE <- config$input_data$file %||% "data/farms_input.csv"
+if (!is.logical(USE_INPUT_POPULATION_SIZE) ||
+    length(USE_INPUT_POPULATION_SIZE) != 1L) {
+  stop("input_data.use_row_count_for_population_size must be true or false.",
+       call. = FALSE)
+}
+if (USE_INPUT_POPULATION_SIZE) {
+  if (!file.exists(INPUT_DATA_FILE)) {
+    stop("Population input file not found: ", INPUT_DATA_FILE, call. = FALSE)
+  }
+  input_population_data <- read.csv(
+    INPUT_DATA_FILE, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  POPULATION_SIZE <- nrow(input_population_data)
+}
+
 # ---- Dynamic scenario labels -----------------------------------------------
 SCENARIO_NAME <- config$scenario_metadata$name
 PHASE_A_LABEL <- config$scenario_metadata$phase_a_label
@@ -309,6 +330,12 @@ names(average_survival) <- c(SHELTERED_LABEL, UNSHELTERED_LABEL)
 simulation_results <- list(
   scenario = SCENARIO_NAME,
   configuration = config,
+  population_size = POPULATION_SIZE,
+  population_size_source = if (USE_INPUT_POPULATION_SIZE) {
+    paste("row count from", INPUT_DATA_FILE)
+  } else {
+    "config.model_parameters.population_size"
+  },
   production_loss_log = production_loss_log,
   sheltered_survival_log = sheltered_survival_log,
   unsheltered_survival_log = unsheltered_survival_log,
@@ -433,6 +460,12 @@ ggsave(
 summary_table <- data.frame(
   scenario = SCENARIO_NAME,
   monte_carlo_runs = MONTE_CARLO_RUNS,
+  population_size = POPULATION_SIZE,
+  population_size_source = if (USE_INPUT_POPULATION_SIZE) {
+    paste("row count from", INPUT_DATA_FILE)
+  } else {
+    "config.model_parameters.population_size"
+  },
   mean_production_loss = mean(production_loss_log),
   median_production_loss = median(production_loss_log),
   loss_p05 = unname(quantile(production_loss_log, 0.05)),

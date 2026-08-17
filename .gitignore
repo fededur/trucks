@@ -19,6 +19,7 @@ Thumbs.db
 
 # Private operational input data (generated example outputs remain tracked)
 data/trucks_input.csv
+data/farms_input.csv
 
 # Temporary files
 *.tmp

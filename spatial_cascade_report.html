@@ -3136,7 +3136,7 @@ vertical-align: -.125em;
 <li>a sheltered or unsheltered housing status; and</li>
 <li>an amount of production that could be lost.</li>
 </ul>
-<p>The current example uses 150 farms. Average production is represented by a value of 1,000 per farm. This value could mean birds, tonnes, trays of eggs, revenue or another useful capacity measure, as long as the same unit is used for every farm.</p>
+<p>The current example uses 150 farms. The population size comes from <strong>config.model_parameters.population_size</strong>. Average production is represented by a value of 1,000 per farm. This value could mean birds, tonnes, trays of eggs, revenue or another useful capacity measure, as long as the same unit is used for every farm.</p>
 </section>
 <section id="what-happens-in-one-simulation-run" class="level2">
 <h2 class="anchored" data-anchor-id="what-happens-in-one-simulation-run">What happens in one simulation run</h2>
@@ -3186,11 +3186,11 @@ vertical-align: -.125em;
 <colgroup>
 <col style="width: 8%">
 <col style="width: 9%">
-<col style="width: 13%">
+<col style="width: 14%">
 <col style="width: 12%">
 <col style="width: 8%">
 <col style="width: 4%">
-<col style="width: 17%">
+<col style="width: 15%">
 <col style="width: 12%">
 <col style="width: 13%">
 </colgroup>
@@ -3202,7 +3202,7 @@ vertical-align: -.125em;
 <th style="text-align: left;">Average farms lost (%)</th>
 <th style="text-align: left;">Mean total loss</th>
 <th style="text-align: left;">Loss SD</th>
-<th style="text-align: left;">25th&lt;U+2013&gt;75th percentile loss</th>
+<th style="text-align: left;">25th to 75th percentile loss</th>
 <th style="text-align: right;">Sheltered survival (%)</th>
 <th style="text-align: right;">Unsheltered survival (%)</th>
 </tr>
@@ -3235,7 +3235,7 @@ vertical-align: -.125em;
 </div>
 </div>
 <p>The loss values describe the <strong>whole production-type population in one run</strong>. For example, the eggs result is the total loss across all egg farms in that scenario, averaged across the 500 runs. It is not the loss of one average egg farm.</p>
-<p>The standard deviation shows how much total loss varies around the mean. The 25th–75th percentile band contains the middle half of outcomes and is usually easier to use for routine planning than one average. The existing 5th–95th percentiles in the CSV give a wider stress-testing range.</p>
+<p>The standard deviation shows how much total loss varies around the mean. The 25th to 75th percentile band contains the middle half of outcomes and is usually easier to use for routine planning than one average. The existing 5th to 95th percentiles in the CSV give a wider stress-testing range.</p>
 <p>For a population view, focus on three measures together:</p>
 <ul>
 <li><strong>Average farms represented</strong> shows the size of each category.</li>
@@ -3249,7 +3249,7 @@ vertical-align: -.125em;
 <h2 class="anchored" data-anchor-id="how-to-use-it">How to use it</h2>
 <ol type="1">
 <li>Edit <code>config.json</code>.</li>
-<li>Set the number of farms and simulation days.</li>
+<li>Set the number of farms and simulation days. To use the number of rows in a farm CSV instead, set <code>use_row_count_for_population_size</code> to <code>true</code> and set <code>input_data.file</code> to the CSV path. Only the row count is used.</li>
 <li>Set the map area and how quickly risk falls with distance.</li>
 <li>Set the incubation and active periods.</li>
 <li>Set average production per farm, production types and their shares.</li>
