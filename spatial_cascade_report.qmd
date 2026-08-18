@@ -110,11 +110,70 @@ capacity_reference$`Middle half per farm` <- paste(
   capacity_reference$`Middle half per farm`, capacity_unit)
 capacity_reference$`Minimum to maximum per farm` <- paste(
   capacity_reference$`Minimum to maximum per farm`, capacity_unit)
-knitr::kable(capacity_reference, row.names = FALSE)
+knitr::kable(capacity_reference[, c("Production type", "Farms", "Total birds",
+  "Share of all birds")], row.names = FALSE)
 ```
 
-The **Grand total** row gives all birds included in the analysis. Its average, median and
-ranges describe individual farms across the complete input population.
+The **Grand total** row gives all birds included in the analysis. Farm-level
+descriptive statistics are kept in the appendix so they are not confused with
+whole-population results.
+
+## Main result: expected total bird losses
+
+This is the main result for communication. It estimates how many birds could
+be lost across the **whole farm population**, not at an average farm.
+
+For each farm, the model combines its bird count with how often that farm is
+lost across the repeated scenarios. Adding those farm results gives the
+expected total for the population. This is the same as averaging the complete
+national totals across all runs.
+
+```{r}
+#| label: population-loss-table
+#| tbl-cap: "Expected total bird losses across the whole farm population"
+make_population_rows <- function(scenario, risk_data) {
+  rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
+    in_type <- risk_data$production_type == type
+    total_birds <- sum(risk_data$production_yield[in_type])
+    expected_loss <- sum(risk_data$expected_loss_contribution[in_type])
+    data.frame(
+      `Management response` = scenario,
+      `Production type` = type,
+      `Farms in population` = sum(in_type),
+      `Birds in population` = total_birds,
+      `Expected total birds lost` = expected_loss,
+      `Expected share of birds lost` = 100 * expected_loss / total_birds,
+      check.names = FALSE)
+  })
+  total_birds <- sum(risk_data$production_yield)
+  expected_loss <- sum(risk_data$expected_loss_contribution)
+  rows[[length(rows) + 1L]] <- data.frame(
+    `Management response` = scenario,
+    `Production type` = "Total",
+    `Farms in population` = nrow(risk_data),
+    `Birds in population` = total_birds,
+    `Expected total birds lost` = expected_loss,
+    `Expected share of birds lost` = 100 * expected_loss / total_birds,
+    check.names = FALSE)
+  do.call(rbind, rows)
+}
+
+population_estimates <- rbind(
+  make_population_rows("No culling", farm_risk),
+  make_population_rows("Culling", cull_farm_risk))
+population_estimates$`Birds in population` <- format(
+  round(population_estimates$`Birds in population`), big.mark = ",")
+population_estimates$`Expected total birds lost` <- format(
+  round(population_estimates$`Expected total birds lost`), big.mark = ",")
+population_estimates$`Expected share of birds lost` <- paste0(
+  round(population_estimates$`Expected share of birds lost`, 1), "%")
+knitr::kable(population_estimates, row.names = FALSE)
+```
+
+The **Total** rows are the national population estimates. Production-type rows
+add to each Total. These figures do not mean that part of a farm's birds are
+lost in one run: a lost farm contributes all its birds in that run. They are
+planning estimates under the selected assumptions, not forecasts.
 
 ## National bird losses
 
@@ -128,14 +187,14 @@ the culling response shifts the range of national outcomes. The sorting is
 done separately in each panel, so bars in the same horizontal position are not
 necessarily the same matched run.
 
-Across the repeated scenarios, average total loss was
+Across the repeated scenarios, the **expected whole-population loss** was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
 **`r round(mean_loss_share, 1)`%** of all birds. Nine out of ten scenarios finished between
 **`r format(round(summary$loss_p05), big.mark = ",")` and
 `r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit` lost**.
 
-This is a widespread-loss result under the current settings. The average is
-useful for a central planning case, while the upper end of the range shows what
+This is a widespread-loss result under the current settings. The expected
+population total is useful for planning, while the upper end of the range shows what
 a more severe outcome could look like. Because loss is already high in most
 runs, moderate changes to protection may be difficult to distinguish unless
 the spread and timing settings are well supported by evidence.
@@ -149,19 +208,19 @@ passed, every identified farm is culled.
 
 ![Birds lost across matched scenarios, split into No culling and Culling panels on the same scale. Each box shows the middle half of results and its centre line is the median. The culling total includes birds removed directly through culling.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Birds lost in matched scenarios with no culling and with culling"}
 
-Without culling, average loss was
+Without culling, the **expected whole-population loss** was
 **`r format(round(cull$mean_baseline_total_loss), big.mark = ",")` `r capacity_unit`**.
-With culling, average loss was
+With culling, the **expected whole-population loss** was
 **`r format(round(cull$mean_cull_total_loss), big.mark = ",")` `r capacity_unit`**.
 That culling total already includes about
 **`r format(round(cull$mean_direct_cull_loss), big.mark = ",")` `r capacity_unit`**
 removed directly through culling.
 
-After counting that direct loss, the response avoided an average of
+After counting that direct loss, the response avoided an expected
 **`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
 or **`r round(cull$net_loss_reduction_pct, 1)`% of the no-culling loss**. Total
 loss was lower with culling in **`r round(cull$runs_with_lower_total_loss_pct, 1)`%
-of the matched scenarios**. The average number of affected farms fell from
+of the matched scenarios**. Averaged across complete scenarios, the number of affected farms fell from
 `r round(cull$mean_baseline_farms_affected, 1)` to
 `r round(cull$mean_cull_farms_affected, 1)`, while an average of
 `r round(cull$mean_farms_culled, 1)` farms were culled.
@@ -225,65 +284,6 @@ scenario**. It does not describe an average farm. The median is the middle
 scenario result. The “middle half” leaves out the lowest and highest quarter of
 the scenarios and shows how much the total can vary. The **Total** row covers
 the full national farm population.
-
-### Population bird-loss estimates
-
-This separate table gives one planning estimate for the whole population. For
-each farm, the model combines the number of birds with how often that farm was
-lost across the repeated scenarios. Those farm results are then added together.
-This gives the **expected total birds lost across the simulated scenarios**.
-It does not describe an average farm.
-
-```{r}
-#| label: population-loss-table
-#| tbl-cap: "Expected total bird losses across the farm population"
-make_population_rows <- function(scenario, risk_data) {
-  rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
-    in_type <- risk_data$production_type == type
-    total_birds <- sum(risk_data$production_yield[in_type])
-    estimated_loss <- sum(risk_data$expected_loss_contribution[in_type])
-    data.frame(
-      `Management response` = scenario,
-      `Production type` = type,
-      `Farms in population` = sum(in_type),
-      `Birds in population` = total_birds,
-      `Expected total birds lost` = estimated_loss,
-      `Expected share of birds lost` = 100 * estimated_loss / total_birds,
-      check.names = FALSE)
-  })
-  total_birds <- sum(risk_data$production_yield)
-  estimated_loss <- sum(risk_data$expected_loss_contribution)
-  rows[[length(rows) + 1L]] <- data.frame(
-    `Management response` = scenario,
-    `Production type` = "Total",
-    `Farms in population` = nrow(risk_data),
-    `Birds in population` = total_birds,
-    `Expected total birds lost` = estimated_loss,
-    `Expected share of birds lost` = 100 * estimated_loss / total_birds,
-    check.names = FALSE)
-  do.call(rbind, rows)
-}
-
-population_estimates <- rbind(
-  make_population_rows("No culling", farm_risk),
-  make_population_rows("Culling", cull_farm_risk))
-population_estimates$`Birds in population` <- format(
-  round(population_estimates$`Birds in population`), big.mark = ",")
-population_estimates$`Expected total birds lost` <- format(
-  round(population_estimates$`Expected total birds lost`), big.mark = ",")
-population_estimates$`Expected share of birds lost` <- paste0(
-  round(population_estimates$`Expected share of birds lost`, 1), "%")
-knitr::kable(population_estimates, row.names = FALSE)
-```
-
-This calculation gives the same answer as taking the average of the complete
-national bird-loss totals across all runs. It does **not** mean that part of a
-farm's birds are lost in one run: within a run, all birds at a lost farm are
-counted as lost. It is also not a forecast of a real event.
-
-In short, the first table shows the **range between complete scenarios**. This
-table gives the **expected total for the whole population**. Neither table
-reports loss for an average farm.
 
 ## Birds remaining unaffected by shelter category
 
@@ -400,6 +400,21 @@ practices and response actions may all change the real pattern. The model
 should support discussion, not replace operational judgement.
 
 # Appendix: Method and use
+
+## Farm-level descriptive context
+
+This is the only table in the report that describes a typical **individual
+farm**. It is supporting context, not the national result. “Average per farm”
+means the total birds in a category divided by the number of farms in that
+category.
+
+```{r}
+#| label: farm-descriptive-table
+#| tbl-cap: "Bird-count distribution across individual farms"
+knitr::kable(capacity_reference[, c("Production type", "Farms",
+  "Average per farm", "Median per farm", "Middle half per farm",
+  "Minimum to maximum per farm")], row.names = FALSE)
+```
 
 ## Why the scenarios are repeated
 
