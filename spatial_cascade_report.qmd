@@ -119,11 +119,12 @@ national totals across all runs.
 ```{r}
 #| label: population-loss-table
 #| tbl-cap: "Expected total bird losses across the whole farm population"
-make_population_rows <- function(scenario, risk_data) {
+make_population_rows <- function(scenario, risk_data, loss_log) {
   rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
     in_type <- risk_data$production_type == type
     total_birds <- sum(risk_data$production_yield[in_type])
     expected_loss <- sum(risk_data$expected_loss_contribution[in_type])
+    loss_share <- 100 * loss_log[, type] / total_birds
     data.frame(
       `Management response` = scenario,
       `Production type` = type,
@@ -131,10 +132,13 @@ make_population_rows <- function(scenario, risk_data) {
       `Birds in population` = total_birds,
       `Expected total birds lost` = expected_loss,
       `Expected share of birds lost` = 100 * expected_loss / total_birds,
+      `Share p25` = unname(quantile(loss_share, .25)),
+      `Share p75` = unname(quantile(loss_share, .75)),
       check.names = FALSE)
   })
   total_birds <- sum(risk_data$production_yield)
   expected_loss <- sum(risk_data$expected_loss_contribution)
+  total_loss_share <- 100 * rowSums(loss_log) / total_birds
   rows[[length(rows) + 1L]] <- data.frame(
     `Management response` = scenario,
     `Production type` = "Total",
@@ -142,19 +146,26 @@ make_population_rows <- function(scenario, risk_data) {
     `Birds in population` = total_birds,
     `Expected total birds lost` = expected_loss,
     `Expected share of birds lost` = 100 * expected_loss / total_birds,
+    `Share p25` = unname(quantile(total_loss_share, .25)),
+    `Share p75` = unname(quantile(total_loss_share, .75)),
     check.names = FALSE)
   do.call(rbind, rows)
 }
 
 population_estimates <- rbind(
-  make_population_rows("No culling", farm_risk),
-  make_population_rows("Culling", cull_farm_risk))
+  make_population_rows("No culling", farm_risk,
+                       results$production_loss_by_type_log),
+  make_population_rows("Culling", cull_farm_risk,
+                       results$cull_production_loss_by_type_log))
 population_estimates$`Birds in population` <- format(
   round(population_estimates$`Birds in population`), big.mark = ",")
 population_estimates$`Expected total birds lost` <- format(
   round(population_estimates$`Expected total birds lost`), big.mark = ",")
 population_estimates$`Expected share of birds lost` <- paste0(
-  round(population_estimates$`Expected share of birds lost`, 1), "%")
+  round(population_estimates$`Expected share of birds lost`, 1), "% (",
+  round(population_estimates$`Share p25`, 1), "% to ",
+  round(population_estimates$`Share p75`, 1), "%)")
+population_estimates$`Share p25` <- population_estimates$`Share p75` <- NULL
 knitr::kable(population_estimates, row.names = FALSE)
 ```
 
@@ -162,6 +173,10 @@ The **Total** rows are the national population estimates. Production-type rows
 add to each Total. These figures do not mean that part of a farm's birds are
 lost in one run: a lost farm contributes all its birds in that run. They are
 planning estimates under the selected assumptions, not forecasts.
+
+The percentage outside brackets is the expected share lost. The bracketed
+25th–75th percentile range is the middle half of complete scenario outcomes.
+It shows run-to-run variation while keeping all model assumptions fixed.
 
 ## National bird losses
 
