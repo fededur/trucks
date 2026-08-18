@@ -318,3 +318,35 @@ selected, review the timing, distance, shelter, island and run settings, then
 run `source("spatial_cascade_monte_carlo.R")`. The refreshed charts and tables
 will be written to `assets/`. Finish by running
 `quarto render spatial_cascade_report.qmd` to rebuild this report.
+
+# Appendix: How timing and distance shape spread
+
+![The left panel follows one farm after it is reached and shows when it can spread, when it would normally move to lost production, and when a covered farm would be culled. The right panel shows how one transmission opportunity becomes less likely as the distance between two farms increases.](assets/spatial_cascade_timing_distance_concept.svg){#fig-timing-distance fig-alt="Two-panel concept figure showing farm state timing and spatial transmission decay"}
+
+The two parts of the model work together. **Timing controls when a farm can
+spread. Distance controls how likely it is to reach another farm while it is
+active.**
+
+The left panel begins when a farm is reached. It spends
+`r config$model_parameters$incubation_period_days` days incubating and cannot
+spread during that period. It then becomes active for up to
+`r config$model_parameters$active_period_days` days. Without control, it moves
+to lost production at the end of that active period. If the farm is covered by
+the culling policy, it is culled
+`r config$cull_response$response_delay_days` day after becoming active and can
+no longer spread. Coverage still matters: only
+`r round(100 * config$cull_response$coverage)`% of active farms are selected
+for that response under the current settings.
+
+The right panel begins with one active farm and one unaffected farm. At short
+distances, the model gives that transmission opportunity a higher chance. The
+chance falls smoothly as distance increases. Shelter lowers the whole curve
+for a sheltered farm. The different-island curve also includes the island
+setting; with the current value of
+`r config$model_parameters$cross_barrier_transmission_multiplier`, it stays at
+zero because cross-island spread is blocked.
+
+This curve describes one opportunity from one active source. When several
+active farms can reach the same farm on the same day, the model combines those
+opportunities, so the farm's overall chance of being reached can be higher than
+one line alone suggests.

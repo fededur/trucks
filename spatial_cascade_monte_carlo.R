@@ -459,5 +459,99 @@ for (nm in names(plots)) {
   ggsave(file.path(assets_dir, paste0(nm, ".svg")), plots[[nm]],
          device = grDevices::svg, width = plot_width, height = 6, bg = "white")
 }
+
+# Appendix concept figure: timing controls when a farm can spread, while the
+# distance-decay curve controls how likely it is to reach another farm.
+timeline_end <- COOLDOWN_PHASE_B + COOLDOWN_PHASE_C +
+  max(2, ceiling(COOLDOWN_PHASE_C * .3))
+timeline_data <- rbind(
+  data.frame(response = "No control", phase = "Unaffected", start = -2, end = 0),
+  data.frame(response = "No control", phase = PHASE_B_LABEL, start = 0,
+             end = COOLDOWN_PHASE_B),
+  data.frame(response = "No control", phase = PHASE_C_LABEL,
+             start = COOLDOWN_PHASE_B,
+             end = COOLDOWN_PHASE_B + COOLDOWN_PHASE_C),
+  data.frame(response = "No control", phase = PHASE_D_LABEL,
+             start = COOLDOWN_PHASE_B + COOLDOWN_PHASE_C, end = timeline_end),
+  data.frame(response = "Covered farm with culling", phase = "Unaffected",
+             start = -2, end = 0),
+  data.frame(response = "Covered farm with culling", phase = PHASE_B_LABEL,
+             start = 0, end = COOLDOWN_PHASE_B),
+  data.frame(response = "Covered farm with culling", phase = PHASE_C_LABEL,
+             start = COOLDOWN_PHASE_B,
+             end = COOLDOWN_PHASE_B + CULL_RESPONSE_DELAY),
+  data.frame(response = "Covered farm with culling", phase = "Culled",
+             start = COOLDOWN_PHASE_B + CULL_RESPONSE_DELAY,
+             end = timeline_end))
+timeline_data <- timeline_data[timeline_data$end > timeline_data$start, ]
+timeline_data$mid <- (timeline_data$start + timeline_data$end) / 2
+timeline_data$label <- ifelse(timeline_data$end - timeline_data$start >= 1.5,
+                              timeline_data$phase, "")
+timeline_data$label[timeline_data$phase == PHASE_D_LABEL] <- "Lost"
+phase_colours <- setNames(
+  c("#D8DEE2", "#F2B134", "#E76F51", "#7B8790", "#167D8D"),
+  c("Unaffected", PHASE_B_LABEL, PHASE_C_LABEL, PHASE_D_LABEL, "Culled"))
+timing_plot <- ggplot(timeline_data) +
+  geom_rect(aes(xmin = start, xmax = end,
+                ymin = as.numeric(factor(response)) - .34,
+                ymax = as.numeric(factor(response)) + .34, fill = phase),
+            colour = "white", linewidth = .5) +
+  geom_text(aes(x = mid, y = as.numeric(factor(response)), label = label),
+            size = 3, colour = "#203040") +
+  scale_fill_manual(values = phase_colours, name = NULL) +
+  scale_y_continuous(
+    breaks = seq_along(levels(factor(timeline_data$response))),
+    labels = levels(factor(timeline_data$response)), expand = expansion(.18)) +
+  scale_x_continuous(breaks = unique(c(-2, 0, COOLDOWN_PHASE_B,
+    COOLDOWN_PHASE_B + CULL_RESPONSE_DELAY,
+    COOLDOWN_PHASE_B + COOLDOWN_PHASE_C, timeline_end))) +
+  labs(title = "A. When a reached farm can spread",
+       subtitle = paste0("Incubation: ", COOLDOWN_PHASE_B,
+         " days; active period: ", COOLDOWN_PHASE_C,
+         " days; culling delay: ", CULL_RESPONSE_DELAY, " day(s)"),
+       x = "Days since the farm was reached", y = NULL) +
+  report_theme + theme(legend.position = "none")
+
+decay_distance <- seq(0, 300, by = 1)
+decay_data <- rbind(
+  data.frame(distance_km = decay_distance,
+             probability = exp(-LAMBDA * decay_distance),
+             condition = "Same island, not sheltered"),
+  data.frame(distance_km = decay_distance,
+             probability = exp(-LAMBDA * decay_distance) * (1 - PROT_EFFICIENCY),
+             condition = "Same island, sheltered"),
+  data.frame(distance_km = decay_distance,
+             probability = exp(-LAMBDA * decay_distance) *
+               CROSS_BARRIER_MULTIPLIER,
+             condition = "Different island, not sheltered"))
+decay_plot <- ggplot(decay_data,
+    aes(distance_km, probability, colour = condition, linetype = condition)) +
+  geom_line(linewidth = 1) +
+  scale_colour_manual(values = c("Same island, not sheltered" = "#E76F51",
+    "Same island, sheltered" = "#167D8D",
+    "Different island, not sheltered" = "#7B8790"), name = NULL) +
+  scale_linetype_manual(values = c("Same island, not sheltered" = "solid",
+    "Same island, sheltered" = "dashed",
+    "Different island, not sheltered" = "dotted"), name = NULL) +
+  scale_y_continuous(labels = function(x) paste0(round(100 * x), "%"),
+                     limits = c(0, 1)) +
+  labs(title = "B. How distance reduces one transmission opportunity",
+       subtitle = paste0("Spatial decay factor: ", LAMBDA,
+         "; shelter protection: ", round(100 * PROT_EFFICIENCY),
+         "%; cross-island multiplier: ", CROSS_BARRIER_MULTIPLIER),
+       x = "Distance between farms (km)",
+       y = "Modelled transmission probability") +
+  report_theme + theme(legend.position = "bottom")
+
+concept_path <- file.path(assets_dir, "spatial_cascade_timing_distance_concept.svg")
+grDevices::svg(concept_path, width = 13, height = 5.8, bg = "white")
+grid::grid.newpage()
+concept_layout <- grid::grid.layout(nrow = 1, ncol = 2,
+                                    widths = grid::unit(c(1, 1), "null"))
+grid::pushViewport(grid::viewport(layout = concept_layout))
+print(timing_plot, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(decay_plot, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
+grid::popViewport()
+grDevices::dev.off()
 if (interactive()) invisible(lapply(plots, print))
 invisible(results)
