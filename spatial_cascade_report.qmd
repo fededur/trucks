@@ -81,6 +81,13 @@ island_story <- function(group_name) {
 island_comparison <- rbind(island_story(north_name), island_story(south_name))
 north <- island_comparison[island_comparison$group == north_name, ]
 south <- island_comparison[island_comparison$group == south_name, ]
+highest_loss_type <- types[which.max(types$mean_total_production_loss), ]
+type_loss_order <- order(types$mean_total_production_loss, decreasing = TRUE)
+type_loss_comparison <- paste(
+  paste0(types$production_type[type_loss_order], ": ",
+         format(round(types$mean_total_production_loss[type_loss_order]),
+                big.mark = ","), " birds"),
+  collapse = "; ")
 ```
 
 ## What this analysis tells us
@@ -113,8 +120,14 @@ appendix.
 - No two outbreaks unfold in exactly the same way. Response planning should
   therefore allow for a range of possible losses, not rely on one estimate.
 
-- Losses are not distributed evenly. The results show which production types
-  carry the losses and which farms and areas are repeatedly exposed.
+- Without culling, expected losses are **`r type_loss_comparison`**, making
+  **`r highest_loss_type$production_type`** the production type carrying the
+  largest total loss. North Island farms are also more exposed: their average
+  chance of being lost is
+  **`r round(north$mean_lost_probability, 1)`%**, compared with
+  **`r round(south$mean_lost_probability, 1)`%** in the South Island. This is
+  mainly because more farms are in the North Island, making a random start
+  there more likely, while spread between islands is blocked.
 
 - These findings can help compare response choices and focus preparedness.
   They should not be read as a forecast of a future outbreak.
