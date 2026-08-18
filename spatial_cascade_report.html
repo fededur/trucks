@@ -3295,18 +3295,18 @@ Figure 3: Birds lost for each production type across the matched scenarios, spl
 <p>This table describes <strong>total birds lost across all farms in one complete scenario</strong>. It does not describe an average farm. The median is the middle scenario result. The “middle half” leaves out the lowest and highest quarter of the scenarios and shows how much the total can vary. The <strong>Total</strong> row covers the full national farm population.</p>
 <section id="population-bird-loss-estimates" class="level3">
 <h3 class="anchored" data-anchor-id="population-bird-loss-estimates">Population bird-loss estimates</h3>
-<p>This separate table gives one population planning estimate by adding the risk-weighted bird loss from every farm. It does not describe an average farm. The production-type rows add to the national total within each management response.</p>
+<p>This separate table gives one planning estimate for the whole population. For each farm, the model combines the number of birds with how often that farm was lost across the repeated scenarios. Those farm results are then added together. This gives the <strong>expected total birds lost across the simulated scenarios</strong>. It does not describe an average farm.</p>
 <div class="cell">
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
-<caption>Estimated bird losses across the farm population</caption>
+<caption>Expected total bird losses across the farm population</caption>
 <colgroup>
 <col style="width: 15%">
 <col style="width: 12%">
 <col style="width: 15%">
 <col style="width: 15%">
-<col style="width: 16%">
-<col style="width: 23%">
+<col style="width: 19%">
+<col style="width: 22%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -3314,8 +3314,8 @@ Figure 3: Birds lost for each production type across the matched scenarios, spl
 <th style="text-align: left;">Production type</th>
 <th style="text-align: right;">Farms in population</th>
 <th style="text-align: left;">Birds in population</th>
-<th style="text-align: left;">Estimated birds lost</th>
-<th style="text-align: left;">Estimated share of birds lost</th>
+<th style="text-align: left;">Expected total birds lost</th>
+<th style="text-align: left;">Expected share of birds lost</th>
 </tr>
 </thead>
 <tbody>
@@ -3371,7 +3371,8 @@ Figure 3: Birds lost for each production type across the matched scenarios, spl
 </table>
 </div>
 </div>
-<p>“Estimated birds lost” is the sum of the farm-level risk-weighted bird losses across the complete population. It is a planning estimate under the current settings, not a count from one particular scenario and not a forecast of a real event. In short: the first table shows the <strong>range between complete scenarios</strong>; this table shows the <strong>single population estimate</strong> used for planning. Neither table reports loss for an average farm.</p>
+<p>This calculation gives the same answer as taking the average of the complete national bird-loss totals across all runs. It does <strong>not</strong> mean that part of a farm’s birds are lost in one run: within a run, all birds at a lost farm are counted as lost. It is also not a forecast of a real event.</p>
+<p>In short, the first table shows the <strong>range between complete scenarios</strong>. This table gives the <strong>expected total for the whole population</strong>. Neither table reports loss for an average farm.</p>
 </section>
 </section>
 <section id="birds-remaining-unaffected-by-shelter-category" class="level2">
