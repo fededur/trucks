@@ -288,27 +288,10 @@ from `r round(cull$mean_baseline_farms_affected, 1)` to
 `r round(cull$mean_cull_farms_affected, 1)`, with an average of
 `r round(cull$mean_farms_culled, 1)` farms culled.
 
-![Culling leaves more birds unaffected across the modelled outbreaks.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in modelled outbreaks with no culling and with culling"}
-
-```{=html}
-<div class="figure-note" role="note"><strong>How to read this figure:</strong>
-Each thin bar is one complete modelled outbreak and represents 100% of the birds
-in the national farm population. Orange shows birds lost and grey shows birds
-remaining unaffected. Within each panel, the bars run from lower to higher
-loss. This is not a timeline, and bars in the same position are not the same
-outbreak. <strong>What it means:</strong> The larger grey area with culling
-shows that the response leaves more birds unaffected across most modelled
-outbreaks. The changing orange share shows that the final loss can vary, even
-when the farm population and model settings stay the same.</div>
-```
-
-Without culling, nine out of ten modelled outbreaks finished between
-**`r format(round(summary$loss_p05), big.mark = ",")` and
-`r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit` lost**.
-
-This wide range shows that the final loss is not fixed. For planning, Table 1
-provides the central national estimate, while the figure shows how much
-individual outbreaks can differ.
+The percentages in brackets in Table 1 show the middle half of the modelled
+outcomes. They give planners a practical range rather than relying on one
+estimate. The appendix shows the full set of repeated outcomes and explains
+how the comparison was made.
 
 This does not mean the same saving would occur in a real event. The result says
 that a prompt and well-covered response is valuable under the modelled
@@ -512,6 +495,25 @@ incubate, become active and then have all its birds counted as lost.
 Every starting pattern is run twice. The no-culling and culling versions use
 the same farms and prepared random values. This pairing keeps the comparison
 focused on the management response rather than unrelated random differences.
+
+![Repeated outbreaks show why national losses are reported as a range.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in repeated modelled outbreaks with no culling and with culling"}
+
+```{=html}
+<div class="figure-note" role="note"><strong>How to read this figure:</strong>
+Each thin bar is one complete modelled outbreak and represents 100% of birds in
+the national farm population. Orange shows birds lost and grey shows birds
+remaining unaffected. Bars are ordered from lower to higher loss within each
+panel; this is not a timeline. <strong>What it means:</strong> Outcomes vary
+even when the farm population and model settings stay the same. The larger
+grey area with culling shows that the response reduces losses across most of
+the repeated outbreaks.</div>
+```
+
+Without culling, nine out of ten modelled outbreaks finished between
+**`r format(round(summary$loss_p05), big.mark = ",")` and
+`r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit` lost**.
+This range is why the report presents both a central estimate and a spread of
+possible outcomes.
 
 Under the current culling settings, **`r round(cull$coverage_pct)`% of active
 farms are identified for response** and are culled
