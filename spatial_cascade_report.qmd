@@ -54,6 +54,9 @@ runs <- results$monte_carlo_runs
 days <- config$model_parameters$simulation_days
 capacity_unit <- config$production_metrics$production_capacity_unit
 if (is.null(capacity_unit) || !length(capacity_unit)) capacity_unit <- "birds"
+thousand_birds <- function(x, digits = 1) {
+  format(round(x / 1000, digits), nsmall = digits, big.mark = ",", trim = TRUE)
+}
 mean_loss_share <- 100 * summary$mean_production_loss /
   sum(farms$production_yield)
 cull <- results$cull_comparison_summary
@@ -150,11 +153,11 @@ capacity_reference_row <- function(label, rows) {
     `Average per farm` = mean(capacity),
     `Median per farm` = median(capacity),
     `Middle half per farm` = paste0(
-      format(round(unname(quantile(capacity, .25))), big.mark = ","), " to ",
-      format(round(unname(quantile(capacity, .75))), big.mark = ",")),
+      thousand_birds(unname(quantile(capacity, .25))), " to ",
+      thousand_birds(unname(quantile(capacity, .75)))),
     `Minimum to maximum per farm` = paste0(
-      format(round(min(capacity)), big.mark = ","), " to ",
-      format(round(max(capacity)), big.mark = ",")),
+      thousand_birds(min(capacity)), " to ",
+      thousand_birds(max(capacity))),
     check.names = FALSE)
 }
 capacity_reference <- do.call(rbind, c(
@@ -163,17 +166,13 @@ capacity_reference <- do.call(rbind, c(
   }),
   list(capacity_reference_row("Grand total", rep(TRUE, nrow(farms))))))
 capacity_reference$`Total birds` <- format(
-  round(capacity_reference$`Total birds`), big.mark = ",")
+  round(capacity_reference$`Total birds` / 1000, 1), nsmall = 1, big.mark = ",")
 capacity_reference$`Share of all birds` <- paste0(
   round(capacity_reference$`Share of all birds`, 1), "%")
-capacity_reference$`Average per farm` <- paste(
-  format(round(capacity_reference$`Average per farm`), big.mark = ","), capacity_unit)
-capacity_reference$`Median per farm` <- paste(
-  format(round(capacity_reference$`Median per farm`), big.mark = ","), capacity_unit)
-capacity_reference$`Middle half per farm` <- paste(
-  capacity_reference$`Middle half per farm`, capacity_unit)
-capacity_reference$`Minimum to maximum per farm` <- paste(
-  capacity_reference$`Minimum to maximum per farm`, capacity_unit)
+capacity_reference$`Average per farm` <- thousand_birds(
+  capacity_reference$`Average per farm`)
+capacity_reference$`Median per farm` <- thousand_birds(
+  capacity_reference$`Median per farm`)
 ```
 
 ## An outbreak could lead to substantial bird losses nationally
@@ -181,11 +180,11 @@ capacity_reference$`Minimum to maximum per farm` <- paste(
 The clearest headline is the expected loss across the **whole farm
 population**, rather than the loss at an average farm. Without culling, the
 model estimates a loss of about
-**`r format(round(cull$mean_baseline_total_loss), big.mark = ",")` `r capacity_unit`**.
+**`r thousand_birds(cull$mean_baseline_total_loss)` thousand birds**.
 With culling, that falls to about
-**`r format(round(cull$mean_cull_total_loss), big.mark = ",")` `r capacity_unit`**.
+**`r thousand_birds(cull$mean_cull_total_loss)` thousand birds**.
 That is an expected reduction of
-**`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
+**`r thousand_birds(cull$mean_net_loss_avoided)` thousand birds**,
 or **`r round(cull$net_loss_reduction_pct, 1)`%**. @tbl-expected-population-loss
 shows how this national result is shared across production types and how much
 the modelled outbreaks varied.
@@ -233,14 +232,20 @@ population_estimates <- rbind(
   make_population_rows("Culling", cull_farm_risk,
                        results$cull_production_loss_by_type_log))
 population_estimates$`Birds in population` <- format(
-  round(population_estimates$`Birds in population`), big.mark = ",")
+  round(population_estimates$`Birds in population` / 1000, 1),
+  nsmall = 1, big.mark = ",")
 population_estimates$`Expected total birds lost` <- format(
-  round(population_estimates$`Expected total birds lost`), big.mark = ",")
+  round(population_estimates$`Expected total birds lost` / 1000, 1),
+  nsmall = 1, big.mark = ",")
 population_estimates$`Expected share of birds lost` <- paste0(
   round(population_estimates$`Expected share of birds lost`, 1), "% (",
   round(population_estimates$`Share p25`, 1), "% to ",
   round(population_estimates$`Share p75`, 1), "%)")
 population_estimates$`Share p25` <- population_estimates$`Share p75` <- NULL
+names(population_estimates)[names(population_estimates) == "Birds in population"] <-
+  "Birds in population (thousands)"
+names(population_estimates)[names(population_estimates) == "Expected total birds lost"] <-
+  "Expected birds lost (thousands)"
 
 escape_html <- function(x) {
   x <- gsub("&", "&amp;", as.character(x), fixed = TRUE)
@@ -272,7 +277,7 @@ cat("</tbody></table>\n")
 
 ```{=html}
 <div class="table-note" role="note"><strong>How to read this table:</strong>
-The expected share is the expected national loss divided by the birds
+Bird counts are shown in thousand birds. The expected share is the expected national loss divided by the birds
 in that production type. Percentages in brackets show the 25th–75th percentile
 range across complete modelled outbreaks with the assumptions held fixed. When
 a farm is lost, all birds at that farm are counted as lost in that outbreak.</div>
@@ -280,7 +285,7 @@ a farm is lost, all birds at that farm are counted as lost in that outbreak.</di
 
 The culling response creates an early, deliberate loss at identified farms to
 stop a much larger chain. Its national total includes about
-**`r format(round(cull$mean_direct_cull_loss), big.mark = ",")` `r capacity_unit`**
+**`r thousand_birds(cull$mean_direct_cull_loss)` thousand birds**
 removed directly through culling. Even after counting those birds, total loss
 was lower with culling in **`r round(cull$runs_with_lower_total_loss_pct, 1)`%
 of the matched modelled outbreaks**. The average number of affected farms fell
@@ -333,15 +338,21 @@ make_type_rows <- function(scenario, loss_log) {
 display <- rbind(
   make_type_rows("No culling", results$production_loss_by_type_log),
   make_type_rows("Culling", results$cull_production_loss_by_type_log))
-display$`Total birds` <- format(round(display$`Total birds`), big.mark = ",")
+display$`Total birds` <- format(
+  round(display$`Total birds` / 1000, 1), nsmall = 1, big.mark = ",")
 display$`Median total birds lost` <- format(
-  round(display$`Median total birds lost`), big.mark = ",")
+  round(display$`Median total birds lost` / 1000, 1), nsmall = 1, big.mark = ",")
 display$`Middle half of results` <- paste0(
-  format(round(display$`Loss p25`), big.mark = ","), " to ",
-  format(round(display$`Loss p75`), big.mark = ","), " birds")
+  thousand_birds(display$`Loss p25`), " to ",
+  thousand_birds(display$`Loss p75`))
 display$`Loss p25` <- display$`Loss p75` <- NULL
 display <- display[, c("Management response", "Production type", "Farms", "Total birds",
   "Median total birds lost", "Middle half of results")]
+names(display)[names(display) == "Total birds"] <- "Total birds (thousands)"
+names(display)[names(display) == "Median total birds lost"] <-
+  "Median birds lost (thousands)"
+names(display)[names(display) == "Middle half of results"] <-
+  "Middle half (thousand birds)"
 knitr::kable(display, row.names = FALSE)
 ```
 
@@ -471,9 +482,15 @@ category.
 ```{r}
 #| label: farm-descriptive-table
 #| tbl-cap: "Bird-count distribution across individual farms"
-knitr::kable(capacity_reference[, c("Production type", "Farms",
+farm_context <- capacity_reference[, c("Production type", "Farms",
   "Average per farm", "Median per farm", "Middle half per farm",
-  "Minimum to maximum per farm")], row.names = FALSE)
+  "Minimum to maximum per farm")]
+names(farm_context)[3:6] <- c(
+  "Average per farm (thousand birds)",
+  "Median per farm (thousand birds)",
+  "Middle half per farm (thousand birds)",
+  "Minimum to maximum per farm (thousand birds)")
+knitr::kable(farm_context, row.names = FALSE)
 ```
 
 ## Repeated scenarios and the paired comparison
@@ -510,8 +527,8 @@ the repeated outbreaks.</div>
 ```
 
 Without culling, nine out of ten modelled outbreaks finished between
-**`r format(round(summary$loss_p05), big.mark = ",")` and
-`r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit` lost**.
+**`r thousand_birds(summary$loss_p05)` and
+`r thousand_birds(summary$loss_p95)` thousand birds lost**.
 This range is why the report presents both a central estimate and a spread of
 possible outcomes.
 
