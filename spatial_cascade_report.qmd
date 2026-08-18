@@ -85,9 +85,11 @@ south <- island_comparison[island_comparison$group == south_name, ]
 
 ## What this analysis tells us
 
-This analysis asks a practical question: if a harmful event begins on a small
-number of farms, how many birds could be lost, where could those losses occur,
-and how much difference could a culling response make?
+Each modelled outbreak begins at
+`r config$simulation_controls$initial_phase_c_entities` farms selected at
+random from the national farm population. The analysis asks how many birds
+could be lost, where those losses could occur, and how much difference a
+culling response could make.
 
 The results tell a national story first, then show which production types and
 places carry the loss. The same possible events are considered with no culling
@@ -101,20 +103,21 @@ appendix.
 
 <div class="key-findings-title">Key findings</div>
 
-- Without culling, bird losses are widespread across most modelled outbreaks.
+- Without culling, an outbreak could cause widespread bird losses across New
+  Zealand.
 
-- Early culling reduces the expected national loss by about
+- Acting early through culling could reduce the expected national loss by about
   **`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
   or **`r round(cull$net_loss_reduction_pct, 1)`%**, under the current settings.
 
-- The final loss varies between outbreaks, even though the same farms and
-  model settings are used each time.
+- No two outbreaks unfold in exactly the same way. Response planning should
+  therefore allow for a range of possible losses, not rely on one estimate.
 
-- The production-type results show where the national loss falls, while the
-  map identifies farms and areas that are repeatedly exposed.
+- Losses are not distributed evenly. The results show which production types
+  carry the losses and which farms and areas are repeatedly exposed.
 
-- These results support planning and comparison. They are not a forecast of a
-  future outbreak.
+- These findings can help compare response choices and focus preparedness.
+  They should not be read as a forecast of a future outbreak.
 
 :::
 
