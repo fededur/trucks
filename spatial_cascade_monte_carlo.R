@@ -498,16 +498,22 @@ farm_risk_plot <- ggplot() +
 
 if (CULL_COMPARISON) {
   cull_plot_data <- rbind(
-    data.frame(response = "No control", total_loss = production_loss_log),
-    data.frame(response = "Cull", total_loss = cull_total_loss_log))
+    data.frame(response = "No culling", total_loss = production_loss_log),
+    data.frame(response = "Culling", total_loss = cull_total_loss_log))
+  cull_plot_data$response <- factor(cull_plot_data$response,
+                                    levels = c("No culling", "Culling"))
   cull_comparison_plot <- ggplot(cull_plot_data,
-      aes(response, total_loss, fill = response)) +
-    geom_boxplot(width = .58, outlier.alpha = .18) +
-    scale_fill_manual(values = c("No control" = "#7B8790", "Cull" = "#167D8D")) +
-    labs(title = "Total loss with and without culling",
+      aes(x = "", y = total_loss, fill = response)) +
+    geom_boxplot(width = .45, outlier.alpha = .18) +
+    facet_wrap(~response, nrow = 1) +
+    scale_fill_manual(values = c("No culling" = "#7B8790",
+                                 "Culling" = "#167D8D")) +
+    labs(title = "Total production loss by response",
          subtitle = paste0(CULL_COVERAGE * 100, "% coverage, ",
            CULL_RESPONSE_DELAY, "-day response delay"),
-         x = NULL, y = VALUE_AXIS_LABEL) + report_theme
+         x = NULL, y = VALUE_AXIS_LABEL) + report_theme +
+    theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12),
+          axis.text.x = element_blank(), axis.ticks.x = element_blank())
 }
 
 plots <- list(spatial_cascade_loss_distribution = loss_plot,

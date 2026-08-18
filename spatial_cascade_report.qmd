@@ -172,7 +172,7 @@ then culls each covered farm **`r cull$response_delay_days` day** after it
 becomes active. There is no separate daily limit: once the response delay has
 passed, every identified farm is culled.
 
-![Total production-capacity loss across matched scenarios with no control and with the configured culling response. Culling loss includes the production removed through culling as well as farms otherwise reaching the lost state.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Comparison of total production capacity loss with no control and with culling"}
+![Total production-capacity loss across matched scenarios, split into No culling and Culling panels on the same scale. Each box shows the middle half of results, its centre line is the median, and the whiskers and points show the wider range. Culling loss includes production removed directly through culling as well as farms otherwise reaching the lost state.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Faceted comparison of total production capacity loss in matched scenarios with no culling and with culling"}
 
 Without control, average total loss was
 **`r format(round(cull$mean_baseline_total_loss), big.mark = ",")` `r capacity_unit`**.
