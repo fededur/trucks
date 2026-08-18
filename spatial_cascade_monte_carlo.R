@@ -155,6 +155,9 @@ groups <- c(SHELTERED_LABEL, UNSHELTERED_LABEL)
 production_loss_log <- numeric(MONTE_CARLO_RUNS)
 type_loss_log <- matrix(0, MONTE_CARLO_RUNS, length(types), dimnames = list(NULL, types))
 type_lost_count_log <- type_loss_log
+cull_type_loss_log <- matrix(NA_real_, MONTE_CARLO_RUNS, length(types),
+                             dimnames = list(NULL, types))
+cull_type_lost_count_log <- cull_type_loss_log
 type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
                            dimnames = list(NULL, types, groups))
 group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L, dimnames = list(NULL, groups))
@@ -280,6 +283,13 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
     cull_lost_count_log[sim] <- sum(controlled$lost)
     cull_farm_count_log[sim] <- sum(controlled$culled)
     net_loss_avoided_log[sim] <- production_loss_log[sim] - cull_total_loss_log[sim]
+    for (type in types) {
+      type_rows <- farms$production_type == type
+      cull_type_loss_log[sim, type] <-
+        sum(farms$production_yield[type_rows & controlled$lost])
+      cull_type_lost_count_log[sim, type] <-
+        sum(type_rows & controlled$lost)
+    }
   }
 }
 
@@ -350,6 +360,22 @@ if (CULL_COMPARISON) {
             file.path(assets_dir, "spatial_cascade_cull_comparison.csv"),
             row.names = FALSE)
 
+  cull_type_summary <- do.call(rbind, lapply(types, function(type) {
+    data.frame(
+      production_type = type,
+      farms_in_population = sum(farms$production_type == type),
+      farms_in_population_pct = 100 * mean(farms$production_type == type),
+      average_farms_lost = mean(cull_type_lost_count_log[, type]),
+      average_farms_lost_pct = 100 * mean(cull_type_lost_count_log[, type]) /
+        sum(farms$production_type == type),
+      mean_total_production_loss = mean(cull_type_loss_log[, type]),
+      total_loss_p25 = unname(quantile(cull_type_loss_log[, type], .25)),
+      total_loss_p75 = unname(quantile(cull_type_loss_log[, type], .75)))
+  }))
+  write.csv(cull_type_summary,
+            file.path(assets_dir, "spatial_cascade_cull_production_type_summary.csv"),
+            row.names = FALSE)
+
   cull_comparison_summary <- data.frame(
     runs = MONTE_CARLO_RUNS,
     coverage_pct = 100 * CULL_COVERAGE,
@@ -380,6 +406,8 @@ results <- list(scenario = SCENARIO_NAME, configuration = config, farms = farms,
   cull_farm_risk_summary = cull_farm_risk,
   cull_comparison_summary = cull_comparison_summary,
   cull_total_loss_log = if (CULL_COMPARISON) cull_total_loss_log else NULL,
+  cull_production_loss_by_type_log = if (CULL_COMPARISON) cull_type_loss_log else NULL,
+  cull_lost_count_by_type_log = if (CULL_COMPARISON) cull_type_lost_count_log else NULL,
   direct_cull_loss_log = if (CULL_COMPARISON) cull_direct_loss_log else NULL,
   net_loss_avoided_log = if (CULL_COMPARISON) net_loss_avoided_log else NULL)
 saveRDS(results, file.path(assets_dir, "spatial_cascade_results.rds"))

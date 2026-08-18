@@ -155,28 +155,53 @@ more capacity will generally have a larger total loss.
 ```{r}
 #| label: type-table
 #| tbl-cap: "What the repeated scenarios mean for each production type"
-display <- types[, c("production_type", "farms_in_population",
-  "farms_in_population_pct", "average_farms_lost",
-  "average_farms_lost_pct", "mean_total_production_loss",
-  "total_loss_p25", "total_loss_p75")]
-display$farms_in_population_pct <- paste0(round(display$farms_in_population_pct, 1), "%")
-display$average_farms_lost <- paste0(round(display$average_farms_lost, 1),
-  " (", round(display$average_farms_lost_pct, 1), "%)")
-display$average_farms_lost_pct <- NULL
-display$mean_total_production_loss <- paste(
-  format(round(display$mean_total_production_loss), big.mark = ","), capacity_unit)
-display$total_loss_p25 <- paste0(format(round(display$total_loss_p25), big.mark = ","),
-  " to ", format(round(display$total_loss_p75), big.mark = ","), " ", capacity_unit)
-display$total_loss_p75 <- NULL
-names(display) <- c("Production type", "Farms", "Population share",
-  "Average farms lost (%)", "Average total capacity lost",
-  "Middle half of results")
+make_type_rows <- function(scenario, loss_log, count_log) {
+  rows <- lapply(colnames(loss_log), function(type) {
+    in_type <- farms$production_type == type
+    data.frame(Scenario = scenario, `Production type` = type, check.names = FALSE,
+      Farms = sum(in_type), `Population share` = 100 * mean(in_type),
+      `Average farms lost` = mean(count_log[, type]),
+      `Average farms lost pct` = 100 * mean(count_log[, type]) / sum(in_type),
+      `Average total capacity lost` = mean(loss_log[, type]),
+      `Loss p25` = unname(quantile(loss_log[, type], .25)),
+      `Loss p75` = unname(quantile(loss_log[, type], .75)))
+  })
+  total_loss <- rowSums(loss_log)
+  total_count <- rowSums(count_log)
+  rows[[length(rows) + 1L]] <- data.frame(
+    Scenario = scenario, `Production type` = "Total", check.names = FALSE,
+    Farms = nrow(farms), `Population share` = 100,
+    `Average farms lost` = mean(total_count),
+    `Average farms lost pct` = 100 * mean(total_count) / nrow(farms),
+    `Average total capacity lost` = mean(total_loss),
+    `Loss p25` = unname(quantile(total_loss, .25)),
+    `Loss p75` = unname(quantile(total_loss, .75)))
+  do.call(rbind, rows)
+}
+
+display <- rbind(
+  make_type_rows("No culling", results$production_loss_by_type_log,
+                 results$lost_count_by_type_log),
+  make_type_rows("Culling", results$cull_production_loss_by_type_log,
+                 results$cull_lost_count_by_type_log))
+display$`Population share` <- paste0(round(display$`Population share`, 1), "%")
+display$`Average farms lost` <- paste0(round(display$`Average farms lost`, 1),
+  " (", round(display$`Average farms lost pct`, 1), "%)")
+display$`Average farms lost pct` <- NULL
+display$`Average total capacity lost` <- paste(
+  format(round(display$`Average total capacity lost`), big.mark = ","), capacity_unit)
+display$`Middle half of results` <- paste0(
+  format(round(display$`Loss p25`), big.mark = ","), " to ",
+  format(round(display$`Loss p75`), big.mark = ","), " ", capacity_unit)
+display$`Loss p25` <- display$`Loss p75` <- NULL
 knitr::kable(display, row.names = FALSE)
 ```
 
 The “middle half” column leaves out the lowest quarter and highest quarter of
 the runs. It gives a simple view of the more usual range without implying that
-the more severe results cannot happen.
+the more severe results cannot happen. The **Total** row describes the whole
+farm population within each response scenario; it is not the sum of category
+percentages.
 
 ## What the shelter comparison says
 
