@@ -316,57 +316,8 @@ capacity; the response assumptions are set out in the appendix.
 Both production types follow the same broad national pattern: losses are high
 without a response and lower with culling. A category with more birds exposed
 can carry a larger absolute loss. Production type is used here to describe
-where losses fall; it does not change how spread occurs in the model.
-
-```{r}
-#| label: type-table
-#| tbl-cap: "Range of total bird losses across complete modelled outbreaks"
-make_type_rows <- function(scenario, loss_log) {
-  rows <- lapply(colnames(loss_log), function(type) {
-    in_type <- farms$production_type == type
-    birds_in_type <- sum(farms$production_yield[in_type])
-    data.frame(`Management response` = scenario, `Production type` = type, check.names = FALSE,
-      Farms = sum(in_type), `Total birds` = birds_in_type,
-      `Median total birds lost` = median(loss_log[, type]),
-      `Loss p25` = unname(quantile(loss_log[, type], .25)),
-      `Loss p75` = unname(quantile(loss_log[, type], .75)))
-  })
-  total_loss <- rowSums(loss_log)
-  rows[[length(rows) + 1L]] <- data.frame(
-    `Management response` = scenario, `Production type` = "Total", check.names = FALSE,
-    Farms = nrow(farms), `Total birds` = sum(farms$production_yield),
-    `Median total birds lost` = median(total_loss),
-    `Loss p25` = unname(quantile(total_loss, .25)),
-    `Loss p75` = unname(quantile(total_loss, .75)))
-  do.call(rbind, rows)
-}
-
-display <- rbind(
-  make_type_rows("No culling", results$production_loss_by_type_log),
-  make_type_rows("Culling", results$cull_production_loss_by_type_log))
-display$`Total birds` <- format(
-  round(display$`Total birds` / 1000, 1), nsmall = 1, big.mark = ",")
-display$`Median total birds lost` <- format(
-  round(display$`Median total birds lost` / 1000, 1), nsmall = 1, big.mark = ",")
-display$`Middle half of results` <- paste0(
-  thousand_birds(display$`Loss p25`), " to ",
-  thousand_birds(display$`Loss p75`))
-display$`Loss p25` <- display$`Loss p75` <- NULL
-display <- display[, c("Management response", "Production type", "Farms", "Total birds",
-  "Median total birds lost", "Middle half of results")]
-names(display)[names(display) == "Total birds"] <- "Total birds (thousands)"
-names(display)[names(display) == "Median total birds lost"] <-
-  "Median birds lost (thousands)"
-names(display)[names(display) == "Middle half of results"] <-
-  "Middle half (thousand birds)"
-knitr::kable(display, row.names = FALSE)
-```
-
-This table describes **total birds lost across all farms in one complete
-modelled outbreak**. It does not describe an average farm. The median is the
-middle result. The “middle half” leaves out the lowest and highest quarter of
-the modelled outbreaks and shows how much the total can vary. The **Total** row covers
-the full national farm population.
+where losses fall; it does not change how spread occurs in the model. Table 1
+provides the detailed production-type percentages and ranges.
 
 ## Protection contributes to keeping farms unaffected
 
