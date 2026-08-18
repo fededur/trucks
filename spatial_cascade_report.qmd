@@ -184,74 +184,54 @@ same two management scenarios used throughout the report.
 
 ```{r}
 #| label: type-table
-#| tbl-cap: "Bird losses by production type and management response"
-make_type_rows <- function(scenario, loss_log, count_log) {
+#| tbl-cap: "Range of total bird losses across complete scenarios"
+make_type_rows <- function(scenario, loss_log) {
   rows <- lapply(colnames(loss_log), function(type) {
     in_type <- farms$production_type == type
     birds_in_type <- sum(farms$production_yield[in_type])
-    average_birds_lost <- mean(loss_log[, type])
     data.frame(Scenario = scenario, `Production type` = type, check.names = FALSE,
       Farms = sum(in_type), `Total birds` = birds_in_type,
-      `Average farms lost` = mean(count_log[, type]),
-      `Average farms lost pct` = 100 * mean(count_log[, type]) / sum(in_type),
-      `Average birds lost` = average_birds_lost,
-      `Average birds lost pct` = 100 * average_birds_lost / birds_in_type,
+      `Median total birds lost` = median(loss_log[, type]),
       `Loss p25` = unname(quantile(loss_log[, type], .25)),
       `Loss p75` = unname(quantile(loss_log[, type], .75)))
   })
   total_loss <- rowSums(loss_log)
-  total_count <- rowSums(count_log)
   rows[[length(rows) + 1L]] <- data.frame(
     Scenario = scenario, `Production type` = "Total", check.names = FALSE,
     Farms = nrow(farms), `Total birds` = sum(farms$production_yield),
-    `Average farms lost` = mean(total_count),
-    `Average farms lost pct` = 100 * mean(total_count) / nrow(farms),
-    `Average birds lost` = mean(total_loss),
-    `Average birds lost pct` = 100 * mean(total_loss) /
-      sum(farms$production_yield),
+    `Median total birds lost` = median(total_loss),
     `Loss p25` = unname(quantile(total_loss, .25)),
     `Loss p75` = unname(quantile(total_loss, .75)))
   do.call(rbind, rows)
 }
 
 display <- rbind(
-  make_type_rows("No culling", results$production_loss_by_type_log,
-                 results$lost_count_by_type_log),
-  make_type_rows("Culling", results$cull_production_loss_by_type_log,
-                 results$cull_lost_count_by_type_log))
-display$`Average farms lost` <- paste0(round(display$`Average farms lost`, 1),
-  " (", round(display$`Average farms lost pct`, 1), "%)")
-display$`Average farms lost pct` <- NULL
-display$`Average birds lost out of total` <- paste0(
-  format(round(display$`Average birds lost`), big.mark = ","), " of ",
-  format(round(display$`Total birds`), big.mark = ","), " (",
-  round(display$`Average birds lost pct`, 1), "%)")
-display$`Average birds lost` <- NULL
-display$`Average birds lost pct` <- NULL
+  make_type_rows("No culling", results$production_loss_by_type_log),
+  make_type_rows("Culling", results$cull_production_loss_by_type_log))
 display$`Total birds` <- format(round(display$`Total birds`), big.mark = ",")
+display$`Median total birds lost` <- format(
+  round(display$`Median total birds lost`), big.mark = ",")
 display$`Middle half of results` <- paste0(
   format(round(display$`Loss p25`), big.mark = ","), " to ",
   format(round(display$`Loss p75`), big.mark = ","), " birds")
 display$`Loss p25` <- display$`Loss p75` <- NULL
 display <- display[, c("Scenario", "Production type", "Farms", "Total birds",
-  "Average birds lost out of total", "Average farms lost",
-  "Middle half of results")]
+  "Median total birds lost", "Middle half of results")]
 knitr::kable(display, row.names = FALSE)
 ```
 
-The “middle half” column leaves out the lowest quarter and highest quarter of
-the runs. It gives a simple view of the more usual range without implying that
-the more severe results cannot happen. The **Total** row describes the whole
-national farm population within each response scenario. “Average birds lost
-out of total” compares the average loss with all birds available in that
-production type. The percentage is therefore a share of birds, not a share of
-farms.
+This table describes **total birds lost across all farms in one complete
+scenario**. It does not describe an average farm. The median is the middle
+scenario result. The “middle half” leaves out the lowest and highest quarter of
+the scenarios and shows how much the total can vary. The **Total** row covers
+the full national farm population.
 
 ### Population bird-loss estimates
 
-This separate table builds a population estimate by adding the expected bird
-loss from every farm. It does not describe an average farm. The production-type
-rows add to the national total within each management response.
+This separate table gives one population planning estimate by adding the
+risk-weighted bird loss from every farm. It does not describe an average farm.
+The production-type rows add to the national total within each management
+response.
 
 ```{r}
 #| label: population-loss-table
@@ -298,7 +278,9 @@ knitr::kable(population_estimates, row.names = FALSE)
 “Estimated birds lost” is the sum of the farm-level risk-weighted bird losses
 across the complete population. It is a planning estimate under the current
 settings, not a count from one particular scenario and not a forecast of a
-real event.
+real event. In short: the first table shows the **range between complete
+scenarios**; this table shows the **single population estimate** used for
+planning. Neither table reports loss for an average farm.
 
 ## Birds remaining unaffected by shelter category
 
