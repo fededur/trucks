@@ -1,6 +1,6 @@
 ---
-title: "Fixed-Farm Spatial Cascade Analysis"
-subtitle: "Method, use and strategic results"
+title: "How Production Loss Could Spread Across New Zealand Farms"
+subtitle: "A practical account of the scenario and its results"
 format:
   html:
     toc: true
@@ -28,121 +28,97 @@ mean_loss_share <- 100 * summary$mean_production_loss /
 protection_difference <- summary$protection_benefit_percentage_points
 ```
 
-## Practical purpose
+## The story this model tells
 
-The model asks what could happen if a harmful event starts at one or more farms
-and spreads through a known farm population. It estimates which farms are most
-often affected, how much production could be lost, and whether sheltered farms
-perform better than unsheltered farms.
+This analysis asks a practical question: if a harmful event begins on a small
+number of farms, how far could it spread and how much production could be lost?
+It follows the real farm locations and attributes supplied in
+`r config$input_data$file`.
 
-The results describe the fixed farms in `r config$input_data$file`. They are no
-longer based on a newly invented geography in every run.
+The current population contains **`r format(nrow(farms), big.mark = ",")` farms**.
+Each dot on the map is one of those farms. Its location, region,
+production type, shelter category and production capacity stay the same in
+every scenario. Production type is used to describe the results. Shelter also
+changes the modelled chance of a farm being reached.
 
-## What one node means
+At the start of a scenario, every farm is unaffected. The event begins at
+`r config$simulation_controls$initial_phase_c_entities` selected farms and the
+model follows the next `r days` days. A farm can be reached, spend time in an
+incubation period, become able to affect other farms, and finally have its
+production counted as lost. Nearby farms are more likely to be reached than
+distant farms, although the outcome still includes chance.
 
-One node is one farm row in the input table. The current table contains
-**`r nrow(farms)` fixed farms**. Each farm keeps the same:
+## Why the scenario is repeated
 
-- farm ID and geographic location;
-- island or other transmission-barrier group;
-- region and production type;
-- sheltered status; and
-- production capacity.
+One run gives only one possible chain of events. This analysis repeats the
+whole scenario **`r format(runs, big.mark = ",")` times** over the same farm
+population. The starting locations and the chance outcomes can differ from one
+run to the next. Looking across all runs shows which outcomes are common and
+which sit at the more severe end of the range.
 
-These details do not change between Monte Carlo runs. Production type is used
-only to report results. Shelter is different: it reduces transmission risk.
+More runs make the pattern steadier, but they do not make the assumptions more
+realistic. The value of the results still depends on the farm data and the
+settings used.
 
-## What changes between runs
-
-In each run, all farms reset to unaffected. The event then starts at farms
-selected according to `starting_location_mode` in `config.json`.
-
-- **random** selects `r config$simulation_controls$initial_phase_c_entities`
-  starting farms for each of the configured runs;
-- **each_farm** makes every farm the starting farm repeatedly, providing a fair
-  comparison of which origin creates the largest cascade.
-
-Transmission outcomes then vary randomly for `r days` days. Distances and farm
-attributes remain fixed. The model applies the configured transmission penalty
-when the source and target farms are in different barrier groups.
-
-The four farm states are:
-
-1. **Unaffected** — the farm has not been reached.
-2. **Incubating** — reached, but not yet able to affect other farms.
-3. **Active** — able to affect nearby farms.
-4. **Lost production capacity** — production is counted as lost.
-
-## What the number of runs means
-
-This analysis completed **`r format(runs, big.mark = ",")` alternative outbreak
-scenarios** over the same farms. A run is not one farm or one day. It is one
-complete `r days`-day scenario.
-
-More runs reduce random simulation noise and make percentages more stable. They
-do not correct unrealistic transmission assumptions. In random-start mode,
-check `times_selected_as_start` in the farm-risk CSV: some farms may be selected
-more often than others. Use `each_farm` mode when origin-to-origin comparison is
-the main question.
-
-## Population results
+## What happened across the whole farm population
 
 ![Total production-capacity loss across `r format(runs, big.mark = ",")` complete `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms in the fixed input population. The horizontal axis is the total `r capacity_unit` lost across the whole population in one run; the vertical axis is the number of runs with a similar loss. The dashed line is the average across runs.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Histogram of total production capacity lost across complete Monte Carlo runs over the full fixed farm population"}
 
-Read one bar as: **this many complete simulated scenarios ended with a total
-population loss in this range**. The value is summed across all farms; it is
-not the loss for an average farm. The distribution describes the range of
-losses once a modelled event starts. It does not estimate the chance of a real
-event starting.
+The easiest way to read the chart is to choose one bar and say: **this many
+complete scenarios finished with a total population loss around this level**.
+The value combines the loss from every farm. It is not an average loss for one
+farm, and it is not the chance of a real event beginning.
 
-Average total loss was
+Across the repeated scenarios, average total loss was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
 **`r round(mean_loss_share, 1)`%** of the fixed population's production
-capacity. The 5th to 95th percentile range was
-**`r format(round(summary$loss_p05), big.mark = ",")` to
-`r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit`**.
+capacity. Nine out of ten scenarios finished between
+**`r format(round(summary$loss_p05), big.mark = ",")` and
+`r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit` lost**.
 
-The average represents about `r round(mean_loss_share, 1)`% of the fixed
-population's capacity, so the current settings produce a widespread cascade.
-This is strategically important: when most farms are reached, the model may
-have limited ability to distinguish moderate protection options. The spatial
-decay and timing assumptions should be calibrated before operational use.
+This is a widespread-loss result under the current settings. The average is
+useful for a central planning case, while the upper end of the range shows what
+a more severe outcome could look like. Because loss is already high in most
+runs, moderate changes to protection may be difficult to distinguish unless
+the spread and timing settings are well supported by evidence.
 
-The range matters more than the average alone. Routine planning can use the
-middle of the distribution; resilience planning should also consider the upper
-tail.
+## How the result differs by production type
 
-## Results by production type
+![Total production capacity lost for each production type across the repeated scenarios. Each box shows the range of whole-population loss for that category, not the loss of an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Distribution of total production capacity lost by production type"}
 
-![](assets/spatial_cascade_loss_by_production_type.svg){fig-alt="Total population loss distributions by production type"}
+Production type does not change how the event spreads in this model. It is used
+to show where the production consequences fall. A category with more farms or
+more capacity will generally have a larger total loss.
 
 ```{r}
 #| label: type-table
-#| tbl-cap: "Fixed-population results by production type"
+#| tbl-cap: "What the repeated scenarios mean for each production type"
 display <- types[, c("production_type", "farms_in_population",
   "farms_in_population_pct", "average_farms_lost",
   "average_farms_lost_pct", "mean_total_production_loss",
-  "sd_total_production_loss", "total_loss_p25", "total_loss_p75")]
+  "total_loss_p25", "total_loss_p75")]
 display$farms_in_population_pct <- paste0(round(display$farms_in_population_pct, 1), "%")
 display$average_farms_lost <- paste0(round(display$average_farms_lost, 1),
   " (", round(display$average_farms_lost_pct, 1), "%)")
 display$average_farms_lost_pct <- NULL
-display$mean_total_production_loss <- format(round(display$mean_total_production_loss), big.mark = ",")
-display$sd_total_production_loss <- format(round(display$sd_total_production_loss), big.mark = ",")
+display$mean_total_production_loss <- paste(
+  format(round(display$mean_total_production_loss), big.mark = ","), capacity_unit)
 display$total_loss_p25 <- paste0(format(round(display$total_loss_p25), big.mark = ","),
-  " to ", format(round(display$total_loss_p75), big.mark = ","))
+  " to ", format(round(display$total_loss_p75), big.mark = ","), " ", capacity_unit)
 display$total_loss_p75 <- NULL
 names(display) <- c("Production type", "Farms", "Population share",
-  "Average farms lost (%)", "Mean total loss", "Loss SD",
-  "25th to 75th percentile loss")
+  "Average farms lost (%)", "Average total capacity lost",
+  "Middle half of results")
 knitr::kable(display, row.names = FALSE)
 ```
 
-These are population totals, not average-farm losses. A larger category will
-usually show more total loss because it contains more farms. Production type
-does not alter transmission.
+The “middle half” column leaves out the lowest quarter and highest quarter of
+the runs. It gives a simple view of the more usual range without implying that
+the more severe results cannot happen.
 
-![](assets/spatial_cascade_survival_comparison.svg){fig-alt="Sheltered and unsheltered survival by production type"}
+## What the shelter comparison says
+
+![Average share of sheltered and unsheltered farms that remain unaffected at the end of the scenario, shown by production type.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Comparison of sheltered and unsheltered farm survival by production type"}
 
 Sheltered survival averaged **`r round(summary$sheltered_survival_pct, 1)`%**,
 compared with **`r round(summary$unsheltered_survival_pct, 1)`%** for
@@ -154,38 +130,32 @@ points** under the configured assumptions.
 #| results: asis
 if (protection_difference < 0) {
   cat(paste0(
-    "Sheltered farms have lower raw survival in this run. This does **not** ",
-    "mean shelter increases transmission. Shelter status and geography are ",
-    "fixed, so sheltered farms may be concentrated in more exposed locations ",
-    "or selected as starting farms more often. This is an observed population ",
-    "comparison, not a causal estimate of shelter effectiveness.\n"
+    "In these results, sheltered farms have a slightly lower raw survival ",
+    "rate. This does **not** mean shelter causes harm. The sheltered farms may ",
+    "simply be in more exposed places or may have been chosen as starting ",
+    "farms more often. The chart describes this farm population; it does not ",
+    "prove what shelter caused.\n"
   ))
 } else {
   cat(paste0(
-    "Sheltered farms have higher raw survival in this fixed population. The ",
-    "difference is still an observed comparison and may partly reflect where ",
-    "sheltered farms are located.\n"
+    "Sheltered farms have a higher raw survival rate in these results. Some of ",
+    "that difference may still come from where those farms are located, so it ",
+    "should not be treated as proof of the shelter effect on its own.\n"
   ))
 }
 ```
 
-To isolate the effect of shelter, a future paired analysis should run the same
-farms, starting locations and random transmission rolls twice: once with the
-configured shelter protection and once with protection switched off. The
-difference between those paired outcomes would be a cleaner protection-effect
-estimate.
+The cleanest future test would compare the same farms and the same starting
+conditions twice: once with shelter protection and once without it. That would
+separate the modelled shelter effect from differences in farm location.
 
-## Which farms are most exposed
+## Where the exposure sits
 
-![](assets/spatial_cascade_farm_risk_map.svg){fig-alt="Fixed farm locations coloured by probability of reaching the lost state"}
+![Farm exposure across New Zealand. Larger bubbles have more production capacity. Colour shows how often each farm reached the lost state across all repeated scenarios.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="Map of fixed New Zealand farms coloured by how often they reach the lost state"}
 
-The map shows both North and South Island farms together, without separate
-panels. The grey shape is New Zealand and, when enabled, the fine grey lines
-show regional council boundaries. **Each point is one fixed farm** at its
-actual longitude and latitude.
-Point size represents that farm's production capacity. Point colour represents
-the percentage of all Monte Carlo runs in which that farm reached **Lost
-production capacity** by the end of the scenario.
+The map brings both islands into one view. Each bubble is one farm at its fixed
+location. Larger bubbles have more production capacity. The colour shows the
+share of repeated scenarios in which the farm reached the lost state.
 
 For example, a value of 40% means that the farm reached the lost state in 40
 out of every 100 simulated scenarios under the current settings and starting
@@ -194,69 +164,54 @@ production, and it is not a forecast that an event will occur. It is a
 scenario-based exposure measure: a high value identifies a farm that is often
 reached when many possible cascades are tested.
 
-The map and `assets/spatial_cascade_farm_risk.csv` report for every farm:
+For example, 40% means the farm reached the lost state in 40 out of every 100
+modelled scenarios. It does not mean that the farm loses 40% of its own
+production, and it is not a forecast that the event will occur. A high value
+simply marks a farm that is frequently exposed under the chosen settings and
+starting method.
 
-- how often it was selected as a starting farm;
-- probability of being affected;
-- probability of reaching the final lost state; and
-- expected contribution to total production loss.
-
-In random-start mode these probabilities describe the configured mixture of
-starting locations. They are not intrinsic farm scores independent of the start
-sampling design. With `r runs` runs and
-`r config$simulation_controls$initial_phase_c_entities` starts per run, a farm
-is selected about
+The supporting farm-risk CSV also records how often each farm started a
+scenario, how often it was affected, how often it was lost, and its expected
+contribution to total loss. In random-start mode, some farms will be selected
+as starting points more often than others just by chance. The current setup
+selects each farm about
 `r round(runs * config$simulation_controls$initial_phase_c_entities / nrow(farms), 1)`
-times on average, but the actual count varies. Use `each_farm` mode for balanced
-origin comparisons.
+times on average.
 
-## Controlling transmission between islands
+## What happens between the islands
 
-The model uses the `barrier_group` field in the fixed farm table. In the
-current data this field is the island. Transmission within the same island has
-no extra penalty. Transmission between different islands is multiplied by
-`cross_barrier_transmission_multiplier` from `config.json`, after the normal
-distance decay and shelter protection are applied.
+The farm data identify which island each farm belongs to. Farms on the same
+island have no extra barrier. For farms on different islands, the model applies
+the cross-island setting after allowing for distance and shelter.
 
-The current value is **`r config$model_parameters$cross_barrier_transmission_multiplier`**,
-so cross-island transmission is blocked. This means the model was already
-keeping island cascades separate; the new setting simply makes that assumption
-visible and controllable.
+The current value is
+**`r config$model_parameters$cross_barrier_transmission_multiplier`**. A value
+of 0 blocks spread between islands. A value such as 0.05 leaves a small
+cross-island pathway, while 1 removes the extra island penalty but still allows
+distance to reduce spread. A value above 0 should only be used when there is a
+credible route, such as ferry movements, shared equipment or supplier links.
 
-- `0` blocks transmission between islands.
-- `0.05` retains 5% of the otherwise calculated transmission probability.
-- `1` applies no extra island penalty, although geographic distance still
-  reduces the probability.
+The grey New Zealand shape and optional regional lines are there to make the
+map easier to read. They do not change the model.
 
-Use a small value above zero only when there is a credible cross-island route,
-such as ferry movements, shared equipment or supplier links. This single
-multiplier is a planning simplification. For operational work, known movement
-routes and biosecurity controls should be represented directly where data are
-available.
+## What to take from these results
 
-## Map boundary option
+Under the current settings, the main message is that loss is widespread in
+most scenarios. The range across runs matters because it shows that the final
+loss is not fixed, even when the farm population stays the same. The map then
+adds the local view by showing which farms are repeatedly exposed.
 
-The map uses the official Stats NZ 2025 regional council boundary file stored
-in `data/nz_regional_council_2025.geojson`. In `config.json`, set
-`map_options.show_region_boundaries` to `true` to show region outlines or
-`false` to retain the New Zealand land shape without the internal region lines.
-This setting changes only the presentation; it does not change transmission.
+These results are best used to compare plausible settings and identify where
+better evidence is needed. Straight-line distance cannot represent every real
+pathway. Animal movements, staff, vehicles, shared equipment, wind, cleaning
+practices and response actions may all change the real pattern. The model
+should support discussion, not replace operational judgement.
 
-## How to use it
+## Running the analysis again
 
-1. Replace or edit `data/farms.csv`.
-2. Update `input_data.column_mappings` in `config.json` if column names differ.
-3. Choose `random` or `each_farm` starting-location mode.
-4. Set phase durations, spatial decay, the cross-barrier multiplier, protection
-   efficiency, days and runs.
-5. Run `source("spatial_cascade_monte_carlo.R")`.
-6. Review the charts and CSV files in `assets/`.
-7. Render this report with `quarto render spatial_cascade_report.qmd`.
-
-## Strategic limits
-
-Results are conditional on the farms and model settings supplied. Direct
-geographic distance does not capture roads, wind, animal movements, shared
-suppliers, cleaning practices or response actions. Farm-level probabilities
-should not be used operationally until the fixed data and transmission settings
-have been validated with subject-matter experts.
+Start with the complete farm table in `data/farms.csv`. If its column names
+change, update the mappings in `config.json`. Choose how starting farms are
+selected, review the timing, distance, shelter, island and run settings, then
+run `source("spatial_cascade_monte_carlo.R")`. The refreshed charts and tables
+will be written to `assets/`. Finish by running
+`quarto render spatial_cascade_report.qmd` to rebuild this report.
