@@ -14,7 +14,8 @@ execute:
 
 ```{=html}
 <style>
-.table-note {
+.table-note,
+.figure-note {
   margin-top: -0.55rem;
   margin-bottom: 1.25rem;
   color: #7a8791;
@@ -226,7 +227,19 @@ a farm is lost, all birds at that farm are counted as lost in that outbreak.</di
 
 ## National losses vary between possible outbreaks
 
-![Birds lost and remaining across the modelled outbreaks, shown separately with no culling and with culling. Each thin bar is one complete outbreak and totals 100%. Within each panel, outbreaks are sorted from lower to higher loss; the order is not time.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in modelled outbreaks with no culling and with culling"}
+![Culling leaves more birds unaffected across the modelled outbreaks.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in modelled outbreaks with no culling and with culling"}
+
+```{=html}
+<div class="figure-note" role="note"><strong>How to read this figure:</strong>
+Each thin bar is one complete modelled outbreak and represents 100% of the birds
+in the national farm population. Orange shows birds lost and grey shows birds
+remaining unaffected. Within each panel, the bars run from lower to higher
+loss. This is not a timeline, and bars in the same position are not the same
+outbreak. <strong>What it means:</strong> The larger grey area with culling
+shows that the response leaves more birds unaffected across most modelled
+outbreaks. The changing orange share shows that the final loss can vary, even
+when the farm population and model settings stay the same.</div>
+```
 
 Across the modelled outbreaks, the **expected national loss** was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
@@ -239,12 +252,6 @@ population total is useful for planning, while the upper end of the range shows 
 a more severe outcome could look like. Because loss is already high in most
 runs, moderate changes to protection may be difficult to distinguish unless
 the spread and timing settings are well supported by evidence.
-
-Each bar is one possible national outcome. Orange shows birds lost and grey
-shows birds remaining, so a bar that is 80% orange represents 80% of all birds
-lost in that outbreak. The bars are sorted from lower to higher loss within
-each panel; their order is not time, and positions across panels are not
-the same outbreak in the other panel.
 
 ## Managing the outbreak reduces the number of birds lost
 
