@@ -28,6 +28,7 @@ mean_loss_share <- 100 * summary$mean_production_loss /
 protection_difference <- summary$protection_benefit_percentage_points
 cull <- results$cull_comparison_summary
 farm_risk <- results$farm_risk_summary
+cull_farm_risk <- results$cull_farm_risk_summary
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
 initial_starts <- config$simulation_controls$initial_phase_c_entities
@@ -212,11 +213,18 @@ separate the modelled shelter effect from differences in farm location.
 
 ## Where the exposure sits
 
-![Farm exposure across New Zealand. Larger bubbles have more production capacity. Colour shows how often each farm reached the lost state across all repeated scenarios.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="Map of fixed New Zealand farms coloured by how often they reach the lost state"}
+![Farm exposure across New Zealand without control and with the configured culling response. Both panels use the same farms, bubble sizes and colour scale. Larger bubbles have more production capacity. Colour shows how often each farm was counted as lost across the repeated scenarios.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="Side-by-side maps of fixed New Zealand farm exposure without control and with culling"}
 
-The map brings both islands into one view. Each bubble is one farm at its fixed
-location. Larger bubbles have more production capacity. The colour shows the
-share of repeated scenarios in which the farm reached the lost state.
+The left map shows the no-control result and the right map shows the matched
+culling result. Both bring the two islands into one view. Each bubble is one
+farm at its fixed location, and larger bubbles have more production capacity.
+Because the colour scale is shared, the two panels can be compared directly.
+
+In the no-control panel, colour shows how often a farm reached the lost state
+through the normal modelled chain. In the culling panel, a farm is also counted
+as lost when it is culled. This is important: a coloured farm on the right may
+represent an early, deliberate loss that helped prevent many other farms from
+being reached.
 
 For example, a value of 40% means that the farm reached the lost state in 40
 out of every 100 simulated scenarios under the current settings and starting
@@ -225,11 +233,19 @@ production, and it is not a forecast that an event will occur. It is a
 scenario-based exposure measure: a high value identifies a farm that is often
 reached when many possible cascades are tested.
 
-For example, 40% means the farm reached the lost state in 40 out of every 100
-modelled scenarios. It does not mean that the farm loses 40% of its own
-production, and it is not a forecast that the event will occur. A high value
-simply marks a farm that is frequently exposed under the chosen settings and
-starting method.
+For example, 40% means the farm was counted as lost in 40 out of every 100
+modelled scenarios for that panel. It does not mean that the farm loses 40% of
+its own production, and it is not a forecast that the event will occur. A high
+value simply marks a farm that is frequently exposed under the chosen settings
+and starting method.
+
+Across all farms, the average lost-state probability falls from
+**`r round(mean(farm_risk$probability_lost_pct), 1)`% without control** to
+**`r round(mean(cull_farm_risk$probability_lost_pct), 1)`% with culling**.
+On average, farms are directly culled in
+**`r round(mean(cull_farm_risk$probability_culled_pct), 1)`% of scenarios**.
+The right panel should therefore be read as a mix of farms removed by policy
+and the smaller chain that continues despite that response.
 
 The supporting farm-risk CSV also records how often each farm started a
 scenario, how often it was affected, how often it was lost, and its expected

@@ -159,6 +159,8 @@ type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
                            dimnames = list(NULL, types, groups))
 group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L, dimnames = list(NULL, groups))
 farm_start_count <- farm_affected_count <- farm_lost_count <- integer(POPULATION_SIZE)
+cull_farm_affected_count <- cull_farm_lost_count <-
+  cull_farm_culled_count <- integer(POPULATION_SIZE)
 baseline_affected_count_log <- baseline_lost_count_log <- numeric(MONTE_CARLO_RUNS)
 cull_total_loss_log <- cull_direct_loss_log <- cull_affected_count_log <-
   cull_lost_count_log <- cull_farm_count_log <- net_loss_avoided_log <-
@@ -269,6 +271,9 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
 
   if (CULL_COMPARISON) {
     controlled <- simulate_run(seeds, transmission_rolls, coverage_rolls, TRUE)
+    cull_farm_affected_count <- cull_farm_affected_count + controlled$affected
+    cull_farm_lost_count <- cull_farm_lost_count + controlled$lost
+    cull_farm_culled_count <- cull_farm_culled_count + controlled$culled
     cull_total_loss_log[sim] <- sum(farms$production_yield[controlled$lost])
     cull_direct_loss_log[sim] <- sum(farms$production_yield[controlled$culled])
     cull_affected_count_log[sim] <- sum(controlled$affected)
@@ -288,6 +293,20 @@ farm_risk <- transform(farms,
   probability_lost_pct = 100 * farm_lost_count / MONTE_CARLO_RUNS,
   expected_loss_contribution = production_yield * farm_lost_count / MONTE_CARLO_RUNS)
 write.csv(farm_risk, file.path(assets_dir, "spatial_cascade_farm_risk.csv"), row.names = FALSE)
+
+cull_farm_risk <- NULL
+if (CULL_COMPARISON) {
+  cull_farm_risk <- transform(farms,
+    times_selected_as_start = farm_start_count,
+    probability_affected_pct = 100 * cull_farm_affected_count / MONTE_CARLO_RUNS,
+    probability_lost_pct = 100 * cull_farm_lost_count / MONTE_CARLO_RUNS,
+    probability_culled_pct = 100 * cull_farm_culled_count / MONTE_CARLO_RUNS,
+    expected_loss_contribution = production_yield * cull_farm_lost_count /
+      MONTE_CARLO_RUNS)
+  write.csv(cull_farm_risk,
+            file.path(assets_dir, "spatial_cascade_cull_farm_risk.csv"),
+            row.names = FALSE)
+}
 
 type_summary <- do.call(rbind, lapply(types, function(type) {
   losses <- type_loss_log[, type]; lost_counts <- type_lost_count_log[, type]
@@ -358,6 +377,7 @@ results <- list(scenario = SCENARIO_NAME, configuration = config, farms = farms,
   production_loss_log = production_loss_log, production_loss_by_type_log = type_loss_log,
   lost_count_by_type_log = type_lost_count_log, survival_by_type_and_shelter_log = type_survival_log,
   average_survival = average_survival, farm_risk_summary = farm_risk,
+  cull_farm_risk_summary = cull_farm_risk,
   cull_comparison_summary = cull_comparison_summary,
   cull_total_loss_log = if (CULL_COMPARISON) cull_total_loss_log else NULL,
   direct_cull_loss_log = if (CULL_COMPARISON) cull_direct_loss_log else NULL,
@@ -382,12 +402,23 @@ survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = pro
   labs(title = paste("Average final", PHASE_A_LABEL, "rate"), subtitle = "Fixed farms, split by production type and shelter", x = PRODUCTION_TYPE_LABEL, y = SURVIVAL_AXIS_LABEL) + report_theme + theme(legend.position = "top")
 nz_boundaries <- read_geojson_polygons(BOUNDARY_FILE)
 boundary_line_colour <- if (SHOW_REGION_BOUNDARIES) "#87929A" else NA
+map_risk_data <- if (CULL_COMPARISON) {
+  rbind(transform(farm_risk, probability_culled_pct = 0,
+                  response = "No control"),
+        transform(cull_farm_risk, response = "Cull"))
+} else {
+  transform(farm_risk, probability_culled_pct = 0,
+            response = "No control")
+}
+map_risk_data$response <- factor(map_risk_data$response,
+                                 levels = c("No control", "Cull"))
 farm_risk_plot <- ggplot() +
   geom_polygon(data = nz_boundaries, aes(lon, lat, group = group),
     fill = "#E5E7E9", colour = boundary_line_colour, linewidth = .25) +
-  geom_point(data = farm_risk,
+  geom_point(data = map_risk_data,
     aes(lon, lat, colour = probability_lost_pct, size = production_yield),
     alpha = .82) +
+  facet_wrap(~response, nrow = 1) +
   coord_quickmap(xlim = c(config$spatial_bounds$minimum_longitude,
                          config$spatial_bounds$maximum_longitude),
                  ylim = c(config$spatial_bounds$minimum_latitude,
@@ -395,8 +426,8 @@ farm_risk_plot <- ggplot() +
                  expand = FALSE) +
   scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
   scale_size_area(max_size = 6, name = "Production") +
-  labs(title = "Farm-level probability of reaching the lost state",
-       subtitle = "Conditional on the configured starting-location mode",
+  labs(title = "Farm exposure with and without culling",
+       subtitle = "Matched scenarios and one shared probability scale",
        x = NULL, y = NULL) +
   report_theme +
   theme(legend.position = "right", axis.text = element_blank(),
@@ -423,6 +454,10 @@ plots <- list(spatial_cascade_loss_distribution = loss_plot,
 if (CULL_COMPARISON) {
   plots$spatial_cascade_cull_comparison <- cull_comparison_plot
 }
-for (nm in names(plots)) ggsave(file.path(assets_dir, paste0(nm, ".svg")), plots[[nm]], device = grDevices::svg, width = 9, height = 6, bg = "white")
+for (nm in names(plots)) {
+  plot_width <- if (identical(nm, "spatial_cascade_farm_risk_map")) 13 else 9
+  ggsave(file.path(assets_dir, paste0(nm, ".svg")), plots[[nm]],
+         device = grDevices::svg, width = plot_width, height = 6, bg = "white")
+}
 if (interactive()) invisible(lapply(plots, print))
 invisible(results)
