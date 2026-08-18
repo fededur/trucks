@@ -21,6 +21,8 @@ types <- read.csv("assets/spatial_cascade_production_type_summary.csv")
 farms <- results$farms
 runs <- results$monte_carlo_runs
 days <- config$model_parameters$simulation_days
+capacity_unit <- config$production_metrics$production_capacity_unit
+if (is.null(capacity_unit) || !length(capacity_unit)) capacity_unit <- "birds"
 mean_loss_share <- 100 * summary$mean_production_loss /
   sum(farms$production_yield)
 protection_difference <- summary$protection_benefit_percentage_points
@@ -85,14 +87,20 @@ the main question.
 
 ## Population results
 
-![](assets/spatial_cascade_loss_distribution.svg){fig-alt="Distribution of total production lost across runs over the fixed farm population"}
+![Total production-capacity loss across `r format(runs, big.mark = ",")` complete `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms in the fixed input population. The horizontal axis is the total `r capacity_unit` lost across the whole population in one run; the vertical axis is the number of runs with a similar loss. The dashed line is the average across runs.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Histogram of total production capacity lost across complete Monte Carlo runs over the full fixed farm population"}
+
+Read one bar as: **this many complete simulated scenarios ended with a total
+population loss in this range**. The value is summed across all farms; it is
+not the loss for an average farm. The distribution describes the range of
+losses once a modelled event starts. It does not estimate the chance of a real
+event starting.
 
 Average total loss was
-**`r format(round(summary$mean_production_loss), big.mark = ",")`**, about
+**`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
 **`r round(mean_loss_share, 1)`%** of the fixed population's production
 capacity. The 5th to 95th percentile range was
 **`r format(round(summary$loss_p05), big.mark = ",")` to
-`r format(round(summary$loss_p95), big.mark = ",")`**.
+`r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit`**.
 
 The average represents about `r round(mean_loss_share, 1)`% of the fixed
 population's capacity, so the current settings produce a widespread cascade.
