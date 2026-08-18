@@ -349,38 +349,30 @@ complementary measures rather than alternatives.
 
 ![Farm exposure across New Zealand without culling and with culling. Larger bubbles represent more birds. Colour shows how often all birds at each farm were counted as lost across the modelled outbreaks.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm bird-loss exposure without culling and with culling"}
 
-The left map shows the no-culling result and the right map shows the matched
-culling result. Both bring the two islands into one view. Each bubble is one
-farm at its fixed location, and larger bubbles represent more birds.
-Because the colour scale is shared, the two panels can be compared directly.
+@fig-farm-risk shows the spatial distribution of the simulation results across
+New Zealand. Each bubble is a farm at its fixed location. Larger bubbles hold
+more birds, while darker colours identify farms that are lost more often across
+the modelled outbreaks. The left map shows outcomes without culling and the
+right map shows outcomes with culling. Both maps use the same colour scale, so
+their patterns can be compared directly.
 
-In the no-culling panel, colour shows how often a farm reached the lost state
-through the normal modelled chain. In the culling panel, a farm is also counted
-as lost when it is culled. This is important: a coloured farm on the right may
-represent an early, deliberate loss that helped prevent many other farms from
-being reached.
+On the culling map, a farm is counted as lost if it is deliberately culled or
+if it reaches the lost state through the outbreak. A dark bubble on the right
+does not therefore always represent uncontrolled spread. It may show an early
+cull that helped protect farms elsewhere.
 
-For example, 40% means the farm was counted as lost in 40 out of every 100
-modelled scenarios for that panel. It means all birds at that farm were counted
-as lost in those runs; it is not a forecast that the event will occur. A high
-value simply marks a farm that is frequently exposed under the chosen settings
-and starting method.
+A value of 40% means that the farm was lost in 40 out of every 100 modelled
+outbreaks under that response. In those outbreaks, all birds at the farm are
+counted as lost. The percentage shows repeated exposure under the selected
+settings; it is not a forecast that a real outbreak will reach that farm.
 
 Across all farms, the average chance of being lost falls from
 **`r round(mean(farm_risk$probability_lost_pct), 1)`% without control** to
 **`r round(mean(cull_farm_risk$probability_lost_pct), 1)`% with culling**.
 On average, farms are directly culled in
 **`r round(mean(cull_farm_risk$probability_culled_pct), 1)`% of modelled outbreaks**.
-The right panel should therefore be read as a mix of farms removed by policy
-and the smaller chain that continues despite that response.
-
-The supporting farm-risk CSV also records how often each farm started a
-scenario, how often it was affected, how often it was lost, and its expected
-contribution to total loss. In random-start mode, some farms will be selected
-as starting points more often than others just by chance. The current setup
-selects each farm about
-`r round(runs * config$simulation_controls$initial_phase_c_entities / nrow(farms), 1)`
-times on average.
+The culling map therefore combines the farms deliberately removed by the
+response with the smaller outbreak chain that continues despite that action.
 
 ### More outbreaks begin in the North Island
 
@@ -414,8 +406,9 @@ full farm population is loaded and the analysis is rerun.
 
 The simulation follows a harmful event through a fixed population of farms.
 Each farm keeps its real location and recorded attributes, including its bird
-count, production type and shelter category. An event begins at a small number
-of farms and can reach other farms, with nearby farms generally more exposed
+count, production type and shelter category. Each modelled outbreak begins at
+`r config$simulation_controls$initial_phase_c_entities` farms selected at
+random and can reach other farms, with nearby farms generally more exposed
 than distant farms.
 
 A single event can develop in many ways, so the analysis considers many
@@ -565,3 +558,11 @@ distance, shelter, island, culling and run settings, then run
 `source("spatial_cascade_monte_carlo.R")`. Refreshed figures and tables are
 written to `assets/`. Run `quarto render spatial_cascade_report.qmd` to rebuild
 this report.
+
+The analysis also writes farm-level risk files to `assets/`. These record how
+often each farm begins an outbreak, becomes affected, is lost or is culled,
+along with its contribution to the expected national loss. Because starting
+farms are selected at random, individual farms will not start exactly the same
+number of outbreaks. Under the current settings, each farm is selected about
+`r round(runs * config$simulation_controls$initial_phase_c_entities / nrow(farms), 1)`
+times on average.
