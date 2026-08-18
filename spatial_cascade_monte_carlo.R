@@ -416,12 +416,23 @@ report_theme <- theme_minimal(base_size = 12) + theme(
   plot.title = element_text(face = "bold", colour = "#173B57"),
   plot.subtitle = element_text(colour = "#526575"), panel.grid.minor = element_blank(), legend.position = "none")
 total_population_capacity <- sum(farms$production_yield)
-ordered_loss <- sort(production_loss_log / total_population_capacity)
-loss_plot_data <- rbind(
-  data.frame(scenario_order = seq_along(ordered_loss),
-             outcome = "Production remaining", share = 1 - ordered_loss),
-  data.frame(scenario_order = seq_along(ordered_loss),
-             outcome = "Production lost", share = ordered_loss))
+make_loss_plot_rows <- function(loss_values, response_label) {
+  ordered_loss <- sort(loss_values / total_population_capacity)
+  rbind(
+    data.frame(response = response_label,
+               scenario_order = seq_along(ordered_loss),
+               outcome = "Production remaining", share = 1 - ordered_loss),
+    data.frame(response = response_label,
+               scenario_order = seq_along(ordered_loss),
+               outcome = "Production lost", share = ordered_loss))
+}
+loss_plot_data <- make_loss_plot_rows(production_loss_log, "No culling")
+if (CULL_COMPARISON) {
+  loss_plot_data <- rbind(loss_plot_data,
+    make_loss_plot_rows(cull_total_loss_log, "Culling"))
+}
+loss_plot_data$response <- factor(loss_plot_data$response,
+  levels = c("No culling", "Culling"))
 loss_plot_data$outcome <- factor(loss_plot_data$outcome,
   levels = c("Production lost", "Production remaining"))
 loss_plot <- ggplot(loss_plot_data,
@@ -434,12 +445,15 @@ loss_plot <- ggplot(loss_plot_data,
                      labels = function(x) paste0(round(100 * x), "%"),
                      expand = c(0, 0)) +
   scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+  facet_wrap(~response, ncol = if (CULL_COMPARISON) 2 else 1) +
   labs(title = paste(SCENARIO_NAME, "production outcome across repeated scenarios"),
-       subtitle = paste(MONTE_CARLO_RUNS,
-         "complete scenarios, ordered from lower to higher percentage loss"),
+       subtitle = paste(MONTE_CARLO_RUNS, "matched scenarios per response;",
+         "each panel is ordered from lower to higher percentage loss"),
        x = "Complete scenarios (ordered by loss, not time)",
        y = "Share of national production capacity") +
-  report_theme + theme(legend.position = "top")
+  report_theme + theme(legend.position = "top",
+    strip.text = element_text(face = "bold", colour = "#173B57", size = 12),
+    panel.spacing.x = grid::unit(1, "lines"))
 type_loss_data <- as.data.frame(as.table(type_loss_log)); names(type_loss_data) <- c("run", "production_type", "loss")
 type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = production_type)) +
   geom_boxplot(width = .62, outlier.alpha = .2) + scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +

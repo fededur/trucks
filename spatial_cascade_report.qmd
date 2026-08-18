@@ -137,13 +137,15 @@ ranges describe individual farms across the complete input population.
 
 ## What happened across the whole farm population
 
-![Production lost and remaining across `r format(runs, big.mark = ",")` complete `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms. Each thin vertical bar is one complete scenario and always totals 100%. Scenarios are sorted from lower to higher loss to make the range visible; their left-to-right order is not time and is not the order in which they were run.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="One hundred percent stacked bars showing production lost and remaining in each complete Monte Carlo scenario, ordered from lower to higher loss"}
+![Production lost and remaining across `r format(runs, big.mark = ",")` matched `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms, shown separately with no culling and with culling. Each thin vertical bar is one complete scenario and always totals 100%. Within each panel, scenarios are sorted from lower to higher loss; their left-to-right order is not time or run order.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Faceted one hundred percent stacked bars comparing production lost and remaining in matched scenarios with no culling and with culling"}
 
 Each bar represents one possible national outcome. The orange share is
 production lost and the grey share is production remaining. A bar that is 80%
-orange means that scenario ended with 80% of national capacity lost. The chart
-shows the spread of possible outcomes without turning the number of runs into
-an apparent trend.
+orange means that scenario ended with 80% of national capacity lost. The two
+panels use the same percentage scale. Comparing their orange areas shows how
+the culling response shifts the range of national outcomes. The sorting is
+done separately in each panel, so bars in the same horizontal position are not
+necessarily the same matched run.
 
 Across the repeated scenarios, average total loss was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
