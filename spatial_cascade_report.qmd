@@ -66,15 +66,9 @@ start in the same places and use the same prepared chance values, so the main
 difference is the management response. Detailed model settings and the reason
 for repeating the scenarios are provided in the appendix.
 
-## Birds in the farm population
-
-Every scenario starts with the same birds and farms. This table provides the
-starting context before any birds are lost. The farm-level figures describe
-how birds are distributed across farms; they are not results.
-
 ```{r}
 #| label: production-reference-table
-#| tbl-cap: "Birds in the fixed farm population"
+#| include: false
 capacity_reference_row <- function(label, rows) {
   capacity <- farms$production_yield[rows]
   data.frame(
@@ -110,13 +104,7 @@ capacity_reference$`Middle half per farm` <- paste(
   capacity_reference$`Middle half per farm`, capacity_unit)
 capacity_reference$`Minimum to maximum per farm` <- paste(
   capacity_reference$`Minimum to maximum per farm`, capacity_unit)
-knitr::kable(capacity_reference[, c("Production type", "Farms", "Total birds",
-  "Share of all birds")], row.names = FALSE)
 ```
-
-The **Grand total** row gives all birds included in the analysis. Farm-level
-descriptive statistics are kept in the appendix so they are not confused with
-whole-population results.
 
 ## Main result: expected total bird losses
 
