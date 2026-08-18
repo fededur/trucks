@@ -247,6 +247,59 @@ out of total” compares the average loss with all birds available in that
 production type. The percentage is therefore a share of birds, not a share of
 farms.
 
+### Population bird-loss estimates
+
+This separate table builds a population estimate by adding the expected bird
+loss from every farm. It does not describe an average farm. The production-type
+rows add to the national total within each management response.
+
+```{r}
+#| label: population-loss-table
+#| tbl-cap: "Estimated bird losses across the farm population"
+make_population_rows <- function(scenario, risk_data) {
+  rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
+    in_type <- risk_data$production_type == type
+    total_birds <- sum(risk_data$production_yield[in_type])
+    estimated_loss <- sum(risk_data$expected_loss_contribution[in_type])
+    data.frame(
+      `Management response` = scenario,
+      `Production type` = type,
+      `Farms in population` = sum(in_type),
+      `Birds in population` = total_birds,
+      `Estimated birds lost` = estimated_loss,
+      `Estimated share of birds lost` = 100 * estimated_loss / total_birds,
+      check.names = FALSE)
+  })
+  total_birds <- sum(risk_data$production_yield)
+  estimated_loss <- sum(risk_data$expected_loss_contribution)
+  rows[[length(rows) + 1L]] <- data.frame(
+    `Management response` = scenario,
+    `Production type` = "Total",
+    `Farms in population` = nrow(risk_data),
+    `Birds in population` = total_birds,
+    `Estimated birds lost` = estimated_loss,
+    `Estimated share of birds lost` = 100 * estimated_loss / total_birds,
+    check.names = FALSE)
+  do.call(rbind, rows)
+}
+
+population_estimates <- rbind(
+  make_population_rows("No culling", farm_risk),
+  make_population_rows("Culling", cull_farm_risk))
+population_estimates$`Birds in population` <- format(
+  round(population_estimates$`Birds in population`), big.mark = ",")
+population_estimates$`Estimated birds lost` <- format(
+  round(population_estimates$`Estimated birds lost`), big.mark = ",")
+population_estimates$`Estimated share of birds lost` <- paste0(
+  round(population_estimates$`Estimated share of birds lost`, 1), "%")
+knitr::kable(population_estimates, row.names = FALSE)
+```
+
+“Estimated birds lost” is the sum of the farm-level risk-weighted bird losses
+across the complete population. It is a planning estimate under the current
+settings, not a count from one particular scenario and not a forecast of a
+real event.
+
 ## Birds remaining unaffected by shelter category
 
 ![Average share of sheltered and unsheltered farms remaining unaffected at the end of matched scenarios, shown by production type and split into No culling and Culling panels. Both panels use the same percentage scale.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Faceted comparison of sheltered and unsheltered farm survival by production type with no culling and with culling"}
