@@ -3053,7 +3053,7 @@ vertical-align: -.125em;
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#overview-of-the-approach" id="toc-overview-of-the-approach" class="nav-link active" data-scroll-target="#overview-of-the-approach">Overview of the approach</a></li>
+  <li><a href="#the-question-this-analysis-answers" id="toc-the-question-this-analysis-answers" class="nav-link active" data-scroll-target="#the-question-this-analysis-answers">The question this analysis answers</a></li>
   <li><a href="#main-result-expected-total-bird-losses" id="toc-main-result-expected-total-bird-losses" class="nav-link" data-scroll-target="#main-result-expected-total-bird-losses">Main result: expected total bird losses</a></li>
   <li><a href="#national-bird-losses" id="toc-national-bird-losses" class="nav-link" data-scroll-target="#national-bird-losses">National bird losses</a></li>
   <li><a href="#the-difference-made-by-culling" id="toc-the-difference-made-by-culling" class="nav-link" data-scroll-target="#the-difference-made-by-culling">The difference made by culling</a></li>
@@ -3063,14 +3063,15 @@ vertical-align: -.125em;
   <ul class="collapse">
   <li><a href="#why-the-north-island-looks-more-exposed" id="toc-why-the-north-island-looks-more-exposed" class="nav-link" data-scroll-target="#why-the-north-island-looks-more-exposed">Why the North Island looks more exposed</a></li>
   </ul></li>
-  <li><a href="#what-to-take-from-these-results" id="toc-what-to-take-from-these-results" class="nav-link" data-scroll-target="#what-to-take-from-these-results">What to take from these results</a></li>
+  <li><a href="#the-overall-story" id="toc-the-overall-story" class="nav-link" data-scroll-target="#the-overall-story">The overall story</a></li>
   <li><a href="#appendix-method-and-use" id="toc-appendix-method-and-use" class="nav-link" data-scroll-target="#appendix-method-and-use">Appendix: Method and use</a>
   <ul class="collapse">
+  <li><a href="#overview-of-the-simulation" id="toc-overview-of-the-simulation" class="nav-link" data-scroll-target="#overview-of-the-simulation">Overview of the simulation</a></li>
   <li><a href="#farm-level-descriptive-context" id="toc-farm-level-descriptive-context" class="nav-link" data-scroll-target="#farm-level-descriptive-context">Farm-level descriptive context</a></li>
-  <li><a href="#why-the-scenarios-are-repeated" id="toc-why-the-scenarios-are-repeated" class="nav-link" data-scroll-target="#why-the-scenarios-are-repeated">Why the scenarios are repeated</a></li>
-  <li><a href="#how-the-comparison-is-set-up" id="toc-how-the-comparison-is-set-up" class="nav-link" data-scroll-target="#how-the-comparison-is-set-up">How the comparison is set up</a></li>
+  <li><a href="#repeated-scenarios-and-the-paired-comparison" id="toc-repeated-scenarios-and-the-paired-comparison" class="nav-link" data-scroll-target="#repeated-scenarios-and-the-paired-comparison">Repeated scenarios and the paired comparison</a></li>
   <li><a href="#timing-and-distance" id="toc-timing-and-distance" class="nav-link" data-scroll-target="#timing-and-distance">Timing and distance</a></li>
   <li><a href="#movement-between-islands" id="toc-movement-between-islands" class="nav-link" data-scroll-target="#movement-between-islands">Movement between islands</a></li>
+  <li><a href="#appropriate-use-and-limitations" id="toc-appropriate-use-and-limitations" class="nav-link" data-scroll-target="#appropriate-use-and-limitations">Appropriate use and limitations</a></li>
   <li><a href="#running-the-analysis-again" id="toc-running-the-analysis-again" class="nav-link" data-scroll-target="#running-the-analysis-again">Running the analysis again</a></li>
   </ul></li>
   </ul>
@@ -3107,15 +3108,14 @@ font-size: 0.82rem;
 line-height: 1.35;
 }
 </style>
-<section id="overview-of-the-approach" class="level2">
-<h2 class="anchored" data-anchor-id="overview-of-the-approach">Overview of the approach</h2>
+<section id="the-question-this-analysis-answers" class="level2">
+<h2 class="anchored" data-anchor-id="the-question-this-analysis-answers">The question this analysis answers</h2>
 <p>This analysis asks a practical question: if a harmful event begins on a small number of farms, how many birds could be lost, where could those losses occur, and how much difference could a culling response make?</p>
-<p>The analysis uses the fixed farm locations and attributes in data/farms.csv. It compares the same possible events twice: first with no culling and then with the configured culling response. The two versions start in the same places and use the same prepared chance values, so the main difference is the management response. Detailed model settings and the reason for repeating the scenarios are provided in the appendix.</p>
+<p>The results tell a national story first, then show which production types and places carry the loss. The same possible events are considered with no culling and with a culling response, making the practical value of the response easier to see. The simulation method and guidance on using the analysis are in the appendix.</p>
 </section>
 <section id="main-result-expected-total-bird-losses" class="level2">
 <h2 class="anchored" data-anchor-id="main-result-expected-total-bird-losses">Main result: expected total bird losses</h2>
-<p>This is the main result for communication. It estimates how many birds could be lost across the <strong>whole farm population</strong>, not at an average farm.</p>
-<p>For each farm, the model combines its bird count with how often that farm is lost across the repeated scenarios. Adding those farm results gives the expected total for the population. This is the same as averaging the complete national totals across all runs. The results are summarised in <a href="#tbl-expected-population-loss" class="quarto-xref">Table 1</a>.</p>
+<p>The clearest headline is the expected loss across the <strong>whole farm population</strong>, rather than the loss at an average farm. Without culling, the model estimates a loss of about <strong>124,477 birds</strong>. With culling, that falls to about <strong>34,239 birds</strong>. That is an expected reduction of <strong>90,238 birds</strong>, or <strong>72.5%</strong>. <a href="#tbl-expected-population-loss" class="quarto-xref">Table 1</a> shows how this national result is shared across production types and how much complete scenario outcomes varied.</p>
 <div class="cell">
 <div id="tbl-expected-population-loss" class="cell quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
@@ -3200,11 +3200,10 @@ Table 1: Expected total bird losses across the whole farm population
 </div>
 </div>
 <div class="table-note" role="note"><strong>How to read this table:</strong>
-The Total rows are the national population estimates, and production-type rows
-add to each Total. The percentage outside brackets is the expected share lost;
-the bracketed 25th–75th percentile range is the middle half of complete
-scenario outcomes with assumptions held fixed. A lost farm contributes all its
-birds in that run. These are planning estimates, not forecasts.</div>
+The expected share is the expected whole-population loss divided by the birds
+in that production type. Percentages in brackets show the 25th–75th percentile
+range across complete scenarios with the assumptions held fixed. When a farm
+is lost, all birds at that farm are counted as lost in that scenario.</div>
 </section>
 <section id="national-bird-losses" class="level2">
 <h2 class="anchored" data-anchor-id="national-bird-losses">National bird losses</h2>
@@ -3218,13 +3217,13 @@ Figure 1: Birds lost and remaining across the matched scenarios, shown separate
 </figcaption>
 </figure>
 </div>
-<p>Each bar represents one possible national outcome. The orange share is birds lost and the grey share is birds remaining. A bar that is 80% orange means that scenario ended with 80% of all birds lost. The two panels use the same percentage scale. Comparing their orange areas shows how the culling response shifts the range of national outcomes. The sorting is done separately in each panel, so bars in the same horizontal position are not necessarily the same matched run.</p>
 <p>Across the repeated scenarios, the <strong>expected whole-population loss</strong> was <strong>124,477 birds</strong>, about <strong>83.1%</strong> of all birds. Nine out of ten scenarios finished between <strong>113,674 and 149,847 birds lost</strong>.</p>
 <p>This is a widespread-loss result under the current settings. The expected population total is useful for planning, while the upper end of the range shows what a more severe outcome could look like. Because loss is already high in most runs, moderate changes to protection may be difficult to distinguish unless the spread and timing settings are well supported by evidence.</p>
+<p>Each bar is one possible national outcome. Orange shows birds lost and grey shows birds remaining, so a bar that is 80% orange represents 80% of all birds lost in that scenario. The bars are sorted from lower to higher loss within each panel; their order is not time, and positions across panels are not matched scenarios.</p>
 </section>
 <section id="the-difference-made-by-culling" class="level2">
 <h2 class="anchored" data-anchor-id="the-difference-made-by-culling">The difference made by culling</h2>
-<p>The current policy reaches <strong>80% of active farms</strong>, then culls each covered farm <strong>1 day</strong> after it becomes active. There is no separate daily limit: once the response delay has passed, every identified farm is culled.</p>
+<p>The culling response changes the story materially. It accepts an early, deliberate loss at identified farms to stop a much larger chain from forming.</p>
 <div id="fig-cull-comparison" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Birds lost in matched scenarios with no culling and with culling">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-cull-comparison-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -3237,7 +3236,7 @@ Figure 2: Birds lost across matched scenarios, split into No culling and Cullin
 </div>
 <p>Without culling, the <strong>expected whole-population loss</strong> was <strong>124,477 birds</strong>. With culling, the <strong>expected whole-population loss</strong> was <strong>34,239 birds</strong>. That culling total already includes about <strong>27,167 birds</strong> removed directly through culling.</p>
 <p>After counting that direct loss, the response avoided an expected <strong>90,238 birds</strong>, or <strong>72.5% of the no-culling loss</strong>. Total loss was lower with culling in <strong>99.8% of the matched scenarios</strong>. Averaged across complete scenarios, the number of affected farms fell from 124.1 to 34, while an average of 27 farms were culled.</p>
-<p>This result shows the trade-off clearly. Culling removes birds earlier to prevent a much larger chain of bird losses. It does not mean this exact result would occur in practice. The benefit depends on finding active farms, reaching 80% coverage, acting within 1 day. Those assumptions should be tested against realistic response capability.</p>
+<p>This does not mean the same saving would occur in a real event. The result says that a prompt and well-covered response is valuable under the modelled conditions. Whether that can be achieved depends on detection and operational capacity; the response assumptions are set out in the appendix.</p>
 </section>
 <section id="bird-losses-by-production-type" class="level2">
 <h2 class="anchored" data-anchor-id="bird-losses-by-production-type">Bird losses by production type</h2>
@@ -3251,7 +3250,7 @@ Figure 3: Birds lost for each production type across the matched scenarios, spl
 </figcaption>
 </figure>
 </div>
-<p>Production type does not change how the event spreads. It shows where bird losses fall. A category with more farms or birds will generally have a larger total loss. The panels compare the same two management scenarios used throughout the report.</p>
+<p>Both production types follow the same broad national pattern: losses are high without a response and lower with culling. A category with more birds exposed can carry a larger absolute loss. Production type is used here to describe where losses fall; it does not change how spread occurs in the model.</p>
 <div class="cell">
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3370,13 +3369,19 @@ Figure 5: Farm exposure across New Zealand without culling and with culling. La
 <p>This should not be read as proof that North Island farms are naturally more vulnerable. It is mainly a result of the number and location of farms, random starting points, and the blocked island crossing. The shelter shares are also fairly similar—47.8% in the North Island and 45.9% in the South Island—so shelter mix is not the main explanation here. These figures will update automatically when the full farm population is loaded and the analysis is rerun.</p>
 </section>
 </section>
-<section id="what-to-take-from-these-results" class="level2">
-<h2 class="anchored" data-anchor-id="what-to-take-from-these-results">What to take from these results</h2>
+<section id="the-overall-story" class="level2">
+<h2 class="anchored" data-anchor-id="the-overall-story">The overall story</h2>
 <p>Under the current settings, the main message is that loss is widespread in most scenarios. The range across runs matters because it shows that the final loss is not fixed, even when the farm population stays the same. The map then adds the local view by showing which farms are repeatedly exposed.</p>
-<p>These results are best used to compare plausible settings and identify where better evidence is needed. Straight-line distance cannot represent every real pathway. Animal movements, staff, vehicles, shared equipment, wind, cleaning practices and response actions may all change the real pattern. The model should support discussion, not replace operational judgement.</p>
+<p>The most useful result for communication is the expected total loss across the whole population. The production-type results explain who carries that loss, and the map shows where exposure repeatedly appears. Together they suggest that early culling can sharply reduce national loss under the selected conditions, while still leaving meaningful uncertainty between possible events. This is planning evidence rather than a forecast.</p>
 </section>
 <section id="appendix-method-and-use" class="level1">
 <h1>Appendix: Method and use</h1>
+<section id="overview-of-the-simulation" class="level2">
+<h2 class="anchored" data-anchor-id="overview-of-the-simulation">Overview of the simulation</h2>
+<p>The simulation follows a harmful event through a fixed population of farms. Each farm keeps its real location and recorded attributes, including its bird count, production type and shelter category. An event begins at a small number of farms and can reach other farms, with nearby farms generally more exposed than distant farms.</p>
+<p>A single event can develop in many ways, so the analysis considers many plausible scenarios rather than relying on one chain. Those scenarios show the central result, the range of outcomes and the farms that are repeatedly exposed. Each event is also considered with and without culling. This creates a fair management comparison because both versions begin from the same places and face the same underlying chance conditions.</p>
+<p>The scenarios are not forecasts of what will happen. They are a structured way to understand possible scale, location and uncertainty, and to test how much a management response could change the outcome.</p>
+</section>
 <section id="farm-level-descriptive-context" class="level2">
 <h2 class="anchored" data-anchor-id="farm-level-descriptive-context">Farm-level descriptive context</h2>
 <p>This is the only table in the report that describes a typical <strong>individual farm</strong>. It is supporting context, not the national result. “Average per farm” means the total birds in a category divided by the number of farms in that category.</p>
@@ -3432,15 +3437,13 @@ Figure 5: Farm exposure across New Zealand without culling and with culling. La
 </div>
 </div>
 </section>
-<section id="why-the-scenarios-are-repeated" class="level2">
-<h2 class="anchored" data-anchor-id="why-the-scenarios-are-repeated">Why the scenarios are repeated</h2>
+<section id="repeated-scenarios-and-the-paired-comparison" class="level2">
+<h2 class="anchored" data-anchor-id="repeated-scenarios-and-the-paired-comparison">Repeated scenarios and the paired comparison</h2>
 <p>One run gives only one possible chain of events. This analysis repeats the whole scenario <strong>500 times</strong> over the same fixed farm population. Starting farms and chance outcomes can differ between runs. Looking across all runs shows the usual result as well as less common severe outcomes.</p>
-<p>More runs make the pattern steadier; they do not make the assumptions more accurate. Results still depend on the farm data and the selected settings.</p>
-</section>
-<section id="how-the-comparison-is-set-up" class="level2">
-<h2 class="anchored" data-anchor-id="how-the-comparison-is-set-up">How the comparison is set up</h2>
+<p>More runs make the reported pattern steadier; they do not make the assumptions more accurate. Results still depend on the farm data and selected settings.</p>
 <p>Each scenario begins with every farm unaffected and 3 farms starting the event. The model follows the next 60 days. A farm may be reached, incubate, become active and then have all its birds counted as lost.</p>
 <p>Every starting pattern is run twice. The no-culling and culling versions use the same farms and prepared random values. This pairing keeps the comparison focused on the management response rather than unrelated random differences.</p>
+<p>Under the current culling settings, <strong>80% of active farms are identified for response</strong> and are culled <strong>1 day after becoming active</strong>. There is no separate daily cap. All birds at a culled farm count as a direct loss, while the farm stops contributing to later spread.</p>
 </section>
 <section id="timing-and-distance" class="level2">
 <h2 class="anchored" data-anchor-id="timing-and-distance">Timing and distance</h2>
@@ -3464,6 +3467,11 @@ Figure 6: The left panel follows one farm after it is reached and shows when it
 <p>The farm data identify which island each farm belongs to. Farms on the same island have no extra barrier. For farms on different islands, the model applies the cross-island setting after allowing for distance and shelter.</p>
 <p>The current value is <strong>0</strong>. A value of 0 blocks spread between islands. A value such as 0.05 leaves a small cross-island pathway, while 1 removes the extra island penalty but still allows distance to reduce spread. A value above 0 should only be used when there is a credible route, such as ferry movements, shared equipment or supplier links.</p>
 <p>The grey New Zealand shape and optional regional lines help readers locate the farms. They do not change the calculation.</p>
+</section>
+<section id="appropriate-use-and-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="appropriate-use-and-limitations">Appropriate use and limitations</h2>
+<p>Use the results to compare plausible management settings, understand the possible national scale of loss and identify places that are repeatedly exposed. The expected whole-population loss is the clearest headline for communication; farm averages provide context but answer a different question.</p>
+<p>The model simplifies real pathways. Straight-line distance cannot fully represent movements of birds, staff, vehicles or shared equipment, nor wind, cleaning practice and operational constraints. Results depend on the quality of the farm table and the selected assumptions. They should support planning and discussion, not replace field evidence or operational judgement.</p>
 </section>
 <section id="running-the-analysis-again" class="level2">
 <h2 class="anchored" data-anchor-id="running-the-analysis-again">Running the analysis again</h2>

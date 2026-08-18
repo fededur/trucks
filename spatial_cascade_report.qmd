@@ -65,18 +65,17 @@ north <- island_comparison[island_comparison$group == north_name, ]
 south <- island_comparison[island_comparison$group == south_name, ]
 ```
 
-## Overview of the approach
+## The question this analysis answers
 
 This analysis asks a practical question: if a harmful event begins on a small
 number of farms, how many birds could be lost, where could those losses occur,
 and how much difference could a culling response make?
 
-The analysis uses the fixed farm locations and attributes in
-`r config$input_data$file`. It compares the same possible events twice: first
-with no culling and then with the configured culling response. The two versions
-start in the same places and use the same prepared chance values, so the main
-difference is the management response. Detailed model settings and the reason
-for repeating the scenarios are provided in the appendix.
+The results tell a national story first, then show which production types and
+places carry the loss. The same possible events are considered with no culling
+and with a culling response, making the practical value of the response easier
+to see. The simulation method and guidance on using the analysis are in the
+appendix.
 
 ```{r}
 #| label: production-reference-table
@@ -120,14 +119,17 @@ capacity_reference$`Minimum to maximum per farm` <- paste(
 
 ## Main result: expected total bird losses
 
-This is the main result for communication. It estimates how many birds could
-be lost across the **whole farm population**, not at an average farm.
-
-For each farm, the model combines its bird count with how often that farm is
-lost across the repeated scenarios. Adding those farm results gives the
-expected total for the population. This is the same as averaging the complete
-national totals across all runs. The results are summarised in
-@tbl-expected-population-loss.
+The clearest headline is the expected loss across the **whole farm
+population**, rather than the loss at an average farm. Without culling, the
+model estimates a loss of about
+**`r format(round(cull$mean_baseline_total_loss), big.mark = ",")` `r capacity_unit`**.
+With culling, that falls to about
+**`r format(round(cull$mean_cull_total_loss), big.mark = ",")` `r capacity_unit`**.
+That is an expected reduction of
+**`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
+or **`r round(cull$net_loss_reduction_pct, 1)`%**. @tbl-expected-population-loss
+shows how this national result is shared across production types and how much
+complete scenario outcomes varied.
 
 ```{r}
 #| label: tbl-expected-population-loss
@@ -184,24 +186,15 @@ knitr::kable(population_estimates, row.names = FALSE)
 
 ```{=html}
 <div class="table-note" role="note"><strong>How to read this table:</strong>
-The Total rows are the national population estimates, and production-type rows
-add to each Total. The percentage outside brackets is the expected share lost;
-the bracketed 25th–75th percentile range is the middle half of complete
-scenario outcomes with assumptions held fixed. A lost farm contributes all its
-birds in that run. These are planning estimates, not forecasts.</div>
+The expected share is the expected whole-population loss divided by the birds
+in that production type. Percentages in brackets show the 25th–75th percentile
+range across complete scenarios with the assumptions held fixed. When a farm
+is lost, all birds at that farm are counted as lost in that scenario.</div>
 ```
 
 ## National bird losses
 
 ![Birds lost and remaining across the matched scenarios, shown separately with no culling and with culling. Each thin bar is one complete scenario and totals 100%. Within each panel, scenarios are sorted from lower to higher loss; the order is not time.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in scenarios with no culling and with culling"}
-
-Each bar represents one possible national outcome. The orange share is birds
-lost and the grey share is birds remaining. A bar that is 80% orange means
-that scenario ended with 80% of all birds lost. The two
-panels use the same percentage scale. Comparing their orange areas shows how
-the culling response shifts the range of national outcomes. The sorting is
-done separately in each panel, so bars in the same horizontal position are not
-necessarily the same matched run.
 
 Across the repeated scenarios, the **expected whole-population loss** was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
@@ -215,12 +208,16 @@ a more severe outcome could look like. Because loss is already high in most
 runs, moderate changes to protection may be difficult to distinguish unless
 the spread and timing settings are well supported by evidence.
 
+Each bar is one possible national outcome. Orange shows birds lost and grey
+shows birds remaining, so a bar that is 80% orange represents 80% of all birds
+lost in that scenario. The bars are sorted from lower to higher loss within
+each panel; their order is not time, and positions across panels are not
+matched scenarios.
+
 ## The difference made by culling
 
-The current policy reaches **`r round(cull$coverage_pct)`% of active farms**,
-then culls each covered farm **`r cull$response_delay_days` day** after it
-becomes active. There is no separate daily limit: once the response delay has
-passed, every identified farm is culled.
+The culling response changes the story materially. It accepts an early,
+deliberate loss at identified farms to stop a much larger chain from forming.
 
 ![Birds lost across matched scenarios, split into No culling and Culling panels on the same scale. Each box shows the middle half of results and its centre line is the median. The culling total includes birds removed directly through culling.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Birds lost in matched scenarios with no culling and with culling"}
 
@@ -241,21 +238,19 @@ of the matched scenarios**. Averaged across complete scenarios, the number of af
 `r round(cull$mean_cull_farms_affected, 1)`, while an average of
 `r round(cull$mean_farms_culled, 1)` farms were culled.
 
-This result shows the trade-off clearly. Culling removes birds earlier to
-prevent a much larger chain of bird losses. It does not mean this exact
-result would occur in practice. The benefit depends on finding active farms,
-reaching `r round(cull$coverage_pct)`% coverage, acting within
-`r cull$response_delay_days` day.
-Those assumptions should be tested against realistic response capability.
+This does not mean the same saving would occur in a real event. The result says
+that a prompt and well-covered response is valuable under the modelled
+conditions. Whether that can be achieved depends on detection and operational
+capacity; the response assumptions are set out in the appendix.
 
 ## Bird losses by production type
 
 ![Birds lost for each production type across the matched scenarios, split into No culling and Culling panels on the same scale. Each box describes all birds lost in that category, not an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Birds lost by production type with no culling and with culling"}
 
-Production type does not change how the event spreads. It shows where bird
-losses fall. A category with more farms or birds will generally have a larger
-total loss. The panels compare the
-same two management scenarios used throughout the report.
+Both production types follow the same broad national pattern: losses are high
+without a response and lower with culling. A category with more birds exposed
+can carry a larger absolute loss. Production type is used here to describe
+where losses fall; it does not change how spread occurs in the model.
 
 ```{r}
 #| label: type-table
@@ -402,20 +397,40 @@ fairly similar—`r round(north$sheltered_share, 1)`% in the North Island and
 the main explanation here. These figures will update automatically when the
 full farm population is loaded and the analysis is rerun.
 
-## What to take from these results
+## The overall story
 
 Under the current settings, the main message is that loss is widespread in
 most scenarios. The range across runs matters because it shows that the final
 loss is not fixed, even when the farm population stays the same. The map then
 adds the local view by showing which farms are repeatedly exposed.
 
-These results are best used to compare plausible settings and identify where
-better evidence is needed. Straight-line distance cannot represent every real
-pathway. Animal movements, staff, vehicles, shared equipment, wind, cleaning
-practices and response actions may all change the real pattern. The model
-should support discussion, not replace operational judgement.
+The most useful result for communication is the expected total loss across the
+whole population. The production-type results explain who carries that loss,
+and the map shows where exposure repeatedly appears. Together they suggest
+that early culling can sharply reduce national loss under the selected
+conditions, while still leaving meaningful uncertainty between possible
+events. This is planning evidence rather than a forecast.
 
 # Appendix: Method and use
+
+## Overview of the simulation
+
+The simulation follows a harmful event through a fixed population of farms.
+Each farm keeps its real location and recorded attributes, including its bird
+count, production type and shelter category. An event begins at a small number
+of farms and can reach other farms, with nearby farms generally more exposed
+than distant farms.
+
+A single event can develop in many ways, so the analysis considers many
+plausible scenarios rather than relying on one chain. Those scenarios show the
+central result, the range of outcomes and the farms that are repeatedly
+exposed. Each event is also considered with and without culling. This creates
+a fair management comparison because both versions begin from the same places
+and face the same underlying chance conditions.
+
+The scenarios are not forecasts of what will happen. They are a structured
+way to understand possible scale, location and uncertainty, and to test how
+much a management response could change the outcome.
 
 ## Farm-level descriptive context
 
@@ -432,7 +447,7 @@ knitr::kable(capacity_reference[, c("Production type", "Farms",
   "Minimum to maximum per farm")], row.names = FALSE)
 ```
 
-## Why the scenarios are repeated
+## Repeated scenarios and the paired comparison
 
 One run gives only one possible chain of events. This analysis repeats the
 whole scenario **`r format(runs, big.mark = ",")` times** over the same fixed
@@ -440,10 +455,8 @@ farm population. Starting farms and chance outcomes can differ between runs.
 Looking across all runs shows the usual result as well as less common severe
 outcomes.
 
-More runs make the pattern steadier; they do not make the assumptions more
-accurate. Results still depend on the farm data and the selected settings.
-
-## How the comparison is set up
+More runs make the reported pattern steadier; they do not make the assumptions
+more accurate. Results still depend on the farm data and selected settings.
 
 Each scenario begins with every farm unaffected and
 `r config$simulation_controls$initial_phase_c_entities` farms starting the
@@ -453,6 +466,13 @@ incubate, become active and then have all its birds counted as lost.
 Every starting pattern is run twice. The no-culling and culling versions use
 the same farms and prepared random values. This pairing keeps the comparison
 focused on the management response rather than unrelated random differences.
+
+Under the current culling settings, **`r round(cull$coverage_pct)`% of active
+farms are identified for response** and are culled
+**`r cull$response_delay_days` day after becoming active**. There is no separate
+daily cap. All birds at a
+culled farm count as a direct loss, while the farm stops contributing to later
+spread.
 
 ## Timing and distance
 
@@ -501,6 +521,19 @@ credible route, such as ferry movements, shared equipment or supplier links.
 
 The grey New Zealand shape and optional regional lines help readers locate the
 farms. They do not change the calculation.
+
+## Appropriate use and limitations
+
+Use the results to compare plausible management settings, understand the
+possible national scale of loss and identify places that are repeatedly
+exposed. The expected whole-population loss is the clearest headline for
+communication; farm averages provide context but answer a different question.
+
+The model simplifies real pathways. Straight-line distance cannot fully
+represent movements of birds, staff, vehicles or shared equipment, nor wind,
+cleaning practice and operational constraints. Results depend on the quality
+of the farm table and the selected assumptions. They should support planning
+and discussion, not replace field evidence or operational judgement.
 
 ## Running the analysis again
 
