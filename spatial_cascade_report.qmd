@@ -26,6 +26,28 @@ if (is.null(capacity_unit) || !length(capacity_unit)) capacity_unit <- "birds"
 mean_loss_share <- 100 * summary$mean_production_loss /
   sum(farms$production_yield)
 protection_difference <- summary$protection_benefit_percentage_points
+farm_risk <- results$farm_risk_summary
+north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
+south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
+initial_starts <- config$simulation_controls$initial_phase_c_entities
+
+island_story <- function(group_name) {
+  rows <- farms$barrier_group == group_name
+  group_size <- sum(rows)
+  start_probability <- 100 * (1 -
+    choose(nrow(farms) - group_size, initial_starts) /
+      choose(nrow(farms), initial_starts))
+  group_risk <- mean(farm_risk$probability_lost_pct[
+    farm_risk$barrier_group == group_name])
+  sheltered_share <- 100 * mean(farms$is_sheltered[rows])
+  data.frame(group = group_name, farms = group_size,
+    start_probability = start_probability, mean_lost_probability = group_risk,
+    sheltered_share = sheltered_share)
+}
+
+island_comparison <- rbind(island_story(north_name), island_story(south_name))
+north <- island_comparison[island_comparison$group == north_name, ]
+south <- island_comparison[island_comparison$group == south_name, ]
 ```
 
 ## The story this model tells
@@ -177,6 +199,32 @@ as starting points more often than others just by chance. The current setup
 selects each farm about
 `r round(runs * config$simulation_controls$initial_phase_c_entities / nrow(farms), 1)`
 times on average.
+
+### Why the North Island looks more exposed
+
+In the current results, the average chance of reaching the lost state is
+**`r round(north$mean_lost_probability, 1)`% for North Island farms** and
+**`r round(south$mean_lost_probability, 1)`% for South Island farms**. The main
+reason is how the scenarios begin.
+
+There are `r north$farms` North Island farms and `r south$farms` South Island
+farms in the fixed population. With `r initial_starts` starting farms chosen at
+random, at least one North Island farm starts the event in about
+**`r round(north$start_probability, 1)`% of runs**. The South Island receives a
+starting farm in about **`r round(south$start_probability, 1)`% of runs**.
+
+The cross-island setting is currently 0, so an event cannot move from one
+island to the other. If a run has no South Island starting farm, every South
+Island farm stays unaffected in that run. The larger North Island population
+therefore gives the North Island many more opportunities to be involved.
+
+This should not be read as proof that North Island farms are naturally more
+vulnerable. It is mainly a result of the number and location of farms, random
+starting points, and the blocked island crossing. The shelter shares are also
+fairly similar—`r round(north$sheltered_share, 1)`% in the North Island and
+`r round(south$sheltered_share, 1)`% in the South Island—so shelter mix is not
+the main explanation here. These figures will update automatically when the
+full farm population is loaded and the analysis is rerun.
 
 ## What happens between the islands
 

@@ -3058,7 +3058,10 @@ vertical-align: -.125em;
   <li><a href="#what-happened-across-the-whole-farm-population" id="toc-what-happened-across-the-whole-farm-population" class="nav-link" data-scroll-target="#what-happened-across-the-whole-farm-population">What happened across the whole farm population</a></li>
   <li><a href="#how-the-result-differs-by-production-type" id="toc-how-the-result-differs-by-production-type" class="nav-link" data-scroll-target="#how-the-result-differs-by-production-type">How the result differs by production type</a></li>
   <li><a href="#what-the-shelter-comparison-says" id="toc-what-the-shelter-comparison-says" class="nav-link" data-scroll-target="#what-the-shelter-comparison-says">What the shelter comparison says</a></li>
-  <li><a href="#where-the-exposure-sits" id="toc-where-the-exposure-sits" class="nav-link" data-scroll-target="#where-the-exposure-sits">Where the exposure sits</a></li>
+  <li><a href="#where-the-exposure-sits" id="toc-where-the-exposure-sits" class="nav-link" data-scroll-target="#where-the-exposure-sits">Where the exposure sits</a>
+  <ul class="collapse">
+  <li><a href="#why-the-north-island-looks-more-exposed" id="toc-why-the-north-island-looks-more-exposed" class="nav-link" data-scroll-target="#why-the-north-island-looks-more-exposed">Why the North Island looks more exposed</a></li>
+  </ul></li>
   <li><a href="#what-happens-between-the-islands" id="toc-what-happens-between-the-islands" class="nav-link" data-scroll-target="#what-happens-between-the-islands">What happens between the islands</a></li>
   <li><a href="#what-to-take-from-these-results" id="toc-what-to-take-from-these-results" class="nav-link" data-scroll-target="#what-to-take-from-these-results">What to take from these results</a></li>
   <li><a href="#running-the-analysis-again" id="toc-running-the-analysis-again" class="nav-link" data-scroll-target="#running-the-analysis-again">Running the analysis again</a></li>
@@ -3204,6 +3207,13 @@ Figure 4: Farm exposure across New Zealand. Larger bubbles have more production
 <p>For example, a value of 40% means that the farm reached the lost state in 40 out of every 100 simulated scenarios under the current settings and starting location method. It does not mean the farm is certain to lose 40% of its own production, and it is not a forecast that an event will occur. It is a scenario-based exposure measure: a high value identifies a farm that is often reached when many possible cascades are tested.</p>
 <p>For example, 40% means the farm reached the lost state in 40 out of every 100 modelled scenarios. It does not mean that the farm loses 40% of its own production, and it is not a forecast that the event will occur. A high value simply marks a farm that is frequently exposed under the chosen settings and starting method.</p>
 <p>The supporting farm-risk CSV also records how often each farm started a scenario, how often it was affected, how often it was lost, and its expected contribution to total loss. In random-start mode, some farms will be selected as starting points more often than others just by chance. The current setup selects each farm about 10 times on average.</p>
+<section id="why-the-north-island-looks-more-exposed" class="level3">
+<h3 class="anchored" data-anchor-id="why-the-north-island-looks-more-exposed">Why the North Island looks more exposed</h3>
+<p>In the current results, the average chance of reaching the lost state is <strong>97.6% for North Island farms</strong> and <strong>37.3% for South Island farms</strong>. The main reason is how the scenarios begin.</p>
+<p>There are 113 North Island farms and 37 South Island farms in the fixed population. With 3 starting farms chosen at random, at least one North Island farm starts the event in about <strong>98.6% of runs</strong>. The South Island receives a starting farm in about <strong>57.5% of runs</strong>.</p>
+<p>The cross-island setting is currently 0, so an event cannot move from one island to the other. If a run has no South Island starting farm, every South Island farm stays unaffected in that run. The larger North Island population therefore gives the North Island many more opportunities to be involved.</p>
+<p>This should not be read as proof that North Island farms are naturally more vulnerable. It is mainly a result of the number and location of farms, random starting points, and the blocked island crossing. The shelter shares are also fairly similar—47.8% in the North Island and 45.9% in the South Island—so shelter mix is not the main explanation here. These figures will update automatically when the full farm population is loaded and the analysis is rerun.</p>
+</section>
 </section>
 <section id="what-happens-between-the-islands" class="level2">
 <h2 class="anchored" data-anchor-id="what-happens-between-the-islands">What happens between the islands</h2>
