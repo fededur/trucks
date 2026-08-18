@@ -160,7 +160,11 @@ cull_type_loss_log <- matrix(NA_real_, MONTE_CARLO_RUNS, length(types),
 cull_type_lost_count_log <- cull_type_loss_log
 type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
                            dimnames = list(NULL, types, groups))
+cull_type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
+                                dimnames = list(NULL, types, groups))
 group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L, dimnames = list(NULL, groups))
+cull_group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L,
+                                  dimnames = list(NULL, groups))
 farm_start_count <- farm_affected_count <- farm_lost_count <- integer(POPULATION_SIZE)
 cull_farm_affected_count <- cull_farm_lost_count <-
   cull_farm_culled_count <- integer(POPULATION_SIZE)
@@ -289,12 +293,28 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
         sum(farms$production_yield[type_rows & controlled$lost])
       cull_type_lost_count_log[sim, type] <-
         sum(type_rows & controlled$lost)
+      for (group in groups) {
+        sheltered <- identical(group, SHELTERED_LABEL)
+        rows <- type_rows & farms$is_sheltered == sheltered
+        if (sum(rows)) {
+          cull_type_survival_log[sim, type, group] <-
+            100 * sum(rows & controlled$state == "A") / sum(rows)
+        }
+      }
+    }
+    for (group in groups) {
+      rows <- farms$is_sheltered == identical(group, SHELTERED_LABEL)
+      cull_group_survival_log[sim, group] <-
+        100 * sum(rows & controlled$state == "A") / sum(rows)
     }
   }
 }
 
 average_type_survival <- apply(type_survival_log, c(2, 3), mean, na.rm = TRUE)
 average_survival <- colMeans(group_survival_log, na.rm = TRUE)
+cull_average_type_survival <- apply(cull_type_survival_log, c(2, 3), mean,
+                                    na.rm = TRUE)
+cull_average_survival <- colMeans(cull_group_survival_log, na.rm = TRUE)
 assets_dir <- "assets"; if (!dir.exists(assets_dir)) dir.create(assets_dir, recursive = TRUE)
 
 farm_risk <- transform(farms,
@@ -408,6 +428,8 @@ results <- list(scenario = SCENARIO_NAME, configuration = config, farms = farms,
   cull_total_loss_log = if (CULL_COMPARISON) cull_total_loss_log else NULL,
   cull_production_loss_by_type_log = if (CULL_COMPARISON) cull_type_loss_log else NULL,
   cull_lost_count_by_type_log = if (CULL_COMPARISON) cull_type_lost_count_log else NULL,
+  cull_survival_by_type_and_shelter_log = if (CULL_COMPARISON) cull_type_survival_log else NULL,
+  cull_average_survival = if (CULL_COMPARISON) cull_average_survival else NULL,
   direct_cull_loss_log = if (CULL_COMPARISON) cull_direct_loss_log else NULL,
   net_loss_avoided_log = if (CULL_COMPARISON) net_loss_avoided_log else NULL)
 saveRDS(results, file.path(assets_dir, "spatial_cascade_results.rds"))
@@ -454,15 +476,47 @@ loss_plot <- ggplot(loss_plot_data,
   report_theme + theme(legend.position = "top",
     strip.text = element_text(face = "bold", colour = "#173B57", size = 12),
     panel.spacing.x = grid::unit(1, "lines"))
-type_loss_data <- as.data.frame(as.table(type_loss_log)); names(type_loss_data) <- c("run", "production_type", "loss")
+type_loss_data <- as.data.frame(as.table(type_loss_log))
+names(type_loss_data) <- c("run", "production_type", "loss")
+type_loss_data$response <- "No culling"
+if (CULL_COMPARISON) {
+  cull_type_loss_data <- as.data.frame(as.table(cull_type_loss_log))
+  names(cull_type_loss_data) <- c("run", "production_type", "loss")
+  cull_type_loss_data$response <- "Culling"
+  type_loss_data <- rbind(type_loss_data, cull_type_loss_data)
+}
+type_loss_data$response <- factor(type_loss_data$response,
+                                  levels = c("No culling", "Culling"))
 type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = production_type)) +
-  geom_boxplot(width = .62, outlier.alpha = .2) + scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +
-  labs(title = "Total loss by production type", subtitle = "Production type reports outcomes; it does not alter spread", x = PRODUCTION_TYPE_LABEL, y = VALUE_AXIS_LABEL) + report_theme
-survival_data <- as.data.frame(as.table(average_type_survival)); names(survival_data) <- c("production_type", "protection_group", "survival")
+  geom_boxplot(width = .62, outlier.alpha = .2) +
+  facet_wrap(~response, nrow = 1) +
+  scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +
+  labs(title = "Total loss by production type and response",
+       subtitle = "Matched management scenarios; production type does not alter spread",
+       x = PRODUCTION_TYPE_LABEL, y = VALUE_AXIS_LABEL) + report_theme +
+  theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
+survival_data <- as.data.frame(as.table(average_type_survival))
+names(survival_data) <- c("production_type", "protection_group", "survival")
+survival_data$response <- "No culling"
+if (CULL_COMPARISON) {
+  cull_survival_data <- as.data.frame(as.table(cull_average_type_survival))
+  names(cull_survival_data) <- c("production_type", "protection_group", "survival")
+  cull_survival_data$response <- "Culling"
+  survival_data <- rbind(survival_data, cull_survival_data)
+}
+survival_data$response <- factor(survival_data$response,
+                                 levels = c("No culling", "Culling"))
 survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = protection_group)) +
   geom_col(position = position_dodge(.72), width = .66) + geom_text(aes(label = sprintf("%.1f%%", survival)), position = position_dodge(.72), vjust = -.4) +
-  scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Protection") + scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04))) +
-  labs(title = paste("Average final", PHASE_A_LABEL, "rate"), subtitle = "Fixed farms, split by production type and shelter", x = PRODUCTION_TYPE_LABEL, y = SURVIVAL_AXIS_LABEL) + report_theme + theme(legend.position = "top")
+  facet_wrap(~response, nrow = 1) +
+  scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Protection") +
+  scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04)),
+                     labels = function(x) paste0(round(x), "%")) +
+  labs(title = paste("Average final", PHASE_A_LABEL, "rate by response"),
+       subtitle = "Matched management scenarios, split by production type and shelter",
+       x = PRODUCTION_TYPE_LABEL, y = SURVIVAL_AXIS_LABEL) + report_theme +
+  theme(legend.position = "top",
+        strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
 nz_boundaries <- read_geojson_polygons(BOUNDARY_FILE)
 boundary_line_colour <- if (SHOW_REGION_BOUNDARIES) "#87929A" else NA
 map_risk_data <- if (CULL_COMPARISON) {

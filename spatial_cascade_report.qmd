@@ -29,6 +29,7 @@ protection_difference <- summary$protection_benefit_percentage_points
 cull <- results$cull_comparison_summary
 farm_risk <- results$farm_risk_summary
 cull_farm_risk <- results$cull_farm_risk_summary
+cull_average_survival <- results$cull_average_survival
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
 initial_starts <- config$simulation_controls$initial_phase_c_entities
@@ -200,11 +201,12 @@ Those assumptions should be tested against realistic response capability.
 
 ## How the result differs by production type
 
-![Total production capacity lost for each production type across the repeated scenarios. Each box shows the range of whole-population loss for that category, not the loss of an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Distribution of total production capacity lost by production type"}
+![Total production capacity lost for each production type across the matched scenarios, split into No culling and Culling panels on the same scale. Each box describes total category loss across the whole population, not the loss of an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Faceted distribution of total production capacity loss by production type with no culling and with culling"}
 
 Production type does not change how the event spreads in this model. It is used
 to show where the production consequences fall. A category with more farms or
-more capacity will generally have a larger total loss.
+more capacity will generally have a larger total loss. The panels compare the
+same two management scenarios used throughout the report.
 
 ```{r}
 #| label: type-table
@@ -259,13 +261,18 @@ percentages.
 
 ## What the shelter comparison says
 
-![Average share of sheltered and unsheltered farms that remain unaffected at the end of the scenario, shown by production type.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Comparison of sheltered and unsheltered farm survival by production type"}
+![Average share of sheltered and unsheltered farms remaining unaffected at the end of matched scenarios, shown by production type and split into No culling and Culling panels. Both panels use the same percentage scale.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Faceted comparison of sheltered and unsheltered farm survival by production type with no culling and with culling"}
 
-Sheltered survival averaged **`r round(summary$sheltered_survival_pct, 1)`%**,
-compared with **`r round(summary$unsheltered_survival_pct, 1)`%** for
-unsheltered farms. The difference was
+Without culling, sheltered survival averaged
+**`r round(summary$sheltered_survival_pct, 1)`%**, compared with
+**`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered farms. The difference was
 **`r round(summary$protection_benefit_percentage_points, 1)` percentage
-points** under the configured assumptions.
+points**. With culling, the corresponding averages were
+**`r round(cull_average_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
+and **`r round(cull_average_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**.
+This is a management-policy comparison: the culling panel changes the response,
+while the farm population, starting locations and prepared chance values remain
+matched to the no-culling panel.
 
 ```{r}
 #| results: asis
