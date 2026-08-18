@@ -1,6 +1,6 @@
 library(jsonlite)
 library(ggplot2)
-config <- fromJSON("config.json", simplifyVector = TRUE)
+config <- fromJSON("config_legacy.json", simplifyVector = TRUE)
 `%||%` <- function(value, fallback) {
   if (is.null(value) || length(value) == 0L || is.na(value[1])) fallback else value
 }

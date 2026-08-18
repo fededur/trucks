@@ -9,15 +9,12 @@ config <- fromJSON("config.json", simplifyVector = TRUE)
 # transmission rolls, not from inventing a new population for every run.
 
 MONTE_CARLO_RUNS <- config$simulation_controls$monte_carlo_iterations
-POPULATION_SIZE <- config$model_parameters$population_size
 SIM_DURATION <- config$model_parameters$simulation_days
 LAMBDA <- config$model_parameters$spatial_decay_factor
 CROSS_BARRIER_MULTIPLIER <-
   config$model_parameters$cross_barrier_transmission_multiplier %||% 0
 COOLDOWN_PHASE_B <- config$model_parameters$incubation_period_days
 COOLDOWN_PHASE_C <- config$model_parameters$active_period_days
-BASE_YIELD <- config$production_metrics$average_bird_yield
-ALLOC_RATE <- config$housing_attributes$barn_allocation_rate
 PROT_EFFICIENCY <- config$housing_attributes$barn_protection_efficiency
 CULL_COMPARISON <- config$cull_response$compare_with_no_control %||% TRUE
 CULL_COVERAGE <- config$cull_response$coverage %||% 0.8
@@ -29,7 +26,6 @@ PHASE_A_LABEL <- meta$phase_a_label
 PHASE_B_LABEL <- meta$phase_b_label
 PHASE_C_LABEL <- meta$phase_c_label
 PHASE_D_LABEL <- meta$phase_d_label
-VALUE_AXIS_LABEL <- meta$value_axis_label %||% paste("Total", PHASE_D_LABEL)
 SURVIVAL_AXIS_LABEL <- meta$survival_axis_label %||% paste("Final", PHASE_A_LABEL, "rate (%)")
 SHELTERED_LABEL <- meta$sheltered_label %||% "Sheltered"
 UNSHELTERED_LABEL <- meta$unsheltered_label %||% "Unsheltered"

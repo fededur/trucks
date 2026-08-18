@@ -8,6 +8,7 @@
     "production_type_label": "Production type",
     "region_label": "Region",
     "shelter_category_label": "Shelter category",
+    "value_axis_label": "Total production capacity lost",
     "survival_axis_label": "Average final survival rate (%)",
     "sheltered_label": "Sheltered",
     "unsheltered_label": "Unsheltered"
@@ -21,6 +22,7 @@
   },
   "input_data": {
     "file": "data/farms.csv",
+    "use_row_count_for_population_size": false,
     "column_mappings": {
       "id": "farm_id",
       "lon": "longitude",
@@ -33,6 +35,7 @@
     }
   },
   "model_parameters": {
+    "population_size": 150,
     "simulation_days": 60,
     "spatial_decay_factor": 0.025,
     "cross_barrier_transmission_multiplier": 0.0,
@@ -40,9 +43,15 @@
     "active_period_days": 8
   },
   "production_metrics": {
-    "production_capacity_unit": "birds"
+    "average_bird_yield": 1000,
+    "production_capacity_unit": "birds",
+    "production_types": [
+      { "type": "Eggs", "allocation_rate": 0.55 },
+      { "type": "Meat", "allocation_rate": 0.45 }
+    ]
   },
   "housing_attributes": {
+    "barn_allocation_rate": 0.45,
     "barn_protection_efficiency": 0.70
   },
   "cull_response": {

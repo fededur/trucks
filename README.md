@@ -53,6 +53,7 @@ North and South Island trucks are always kept separate.
 - `data/trucks_clustered.rds` — stable clustered data loaded by the app
 - `spatial_cascade_monte_carlo.R` — fixed-population spatial cascade engine
 - `spatial_cascade_random_geography_legacy.R` — preserved random-layout version
+- `config_legacy.json` — generated-population settings used only by the legacy version
 - `create_fixed_farm_population.R` — rebuilds the example fixed farm table
 - `data/farms.csv` — fixed farm population used by the cascade model
 - `config.json` — external parameters and labels for the cascade engine
@@ -98,19 +99,17 @@ Run the generic spatial cascade simulation:
 source("spatial_cascade_monte_carlo.R")
 ```
 
-Edit `config.json` to change the scenario, population, spatial bounds, phase
-durations, protection settings, production value, production-type categories,
-and Monte Carlo run count. Production type is a reporting split only and does
-not alter transmission.
-
-By default, population size comes from `model_parameters.population_size`. To
-use the number of rows in a farm dataset, set
-`input_data.use_row_count_for_population_size` to `true` and save the CSV at the
-configured `input_data.file` path. Only its row count is used; the Monte Carlo
-engine still generates new random coordinates and attributes for every run.
+Edit `config.json` to change the current fixed-farm scenario, spatial bounds,
+phase durations, protection and culling settings, starting method, and Monte
+Carlo run count. Population size, bird counts, production type and protection
+category come directly from the farm table configured under `input_data`.
 Every run uses the same farm geography and attributes. Randomness comes from
 the event origin and transmission outcomes. The script saves population,
 production-type and farm-level risk results under `assets/`.
+
+The preserved random-geography model reads `config_legacy.json`. Its generated
+population size, average bird yield and category allocation rates are kept
+there so they are not confused with settings for the current fixed-farm model.
 
 ## Use another dataset
 
