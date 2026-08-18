@@ -26,6 +26,7 @@ if (is.null(capacity_unit) || !length(capacity_unit)) capacity_unit <- "birds"
 mean_loss_share <- 100 * summary$mean_production_loss /
   sum(farms$production_yield)
 protection_difference <- summary$protection_benefit_percentage_points
+cull <- results$cull_comparison_summary
 farm_risk <- results$farm_risk_summary
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
@@ -103,6 +104,43 @@ useful for a central planning case, while the upper end of the range shows what
 a more severe outcome could look like. Because loss is already high in most
 runs, moderate changes to protection may be difficult to distinguish unless
 the spread and timing settings are well supported by evidence.
+
+## What changes when culling is used
+
+The analysis also repeats every scenario with a culling response. This is a
+fair comparison: the no-control and culling versions begin at the same farms
+and use the same prepared chance values. The only intended difference is the
+response.
+
+The current policy reaches **`r round(cull$coverage_pct)`% of active farms**,
+waits **`r cull$response_delay_days` day** after a covered farm becomes active,
+and can cull up to **`r cull$maximum_farms_culled_per_day` farms per day**.
+
+![Total production-capacity loss across matched scenarios with no control and with the configured culling response. Culling loss includes the production removed through culling as well as farms otherwise reaching the lost state.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Comparison of total production capacity loss with no control and with culling"}
+
+Without control, average total loss was
+**`r format(round(cull$mean_baseline_total_loss), big.mark = ",")` `r capacity_unit`**.
+With culling, average total loss was
+**`r format(round(cull$mean_cull_total_loss), big.mark = ",")` `r capacity_unit`**.
+That culling total already includes about
+**`r format(round(cull$mean_direct_cull_loss), big.mark = ",")` `r capacity_unit`**
+removed directly through culling.
+
+After counting that direct loss, the response avoided an average of
+**`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
+or **`r round(cull$net_loss_reduction_pct, 1)`% of the no-control loss**. Total
+loss was lower with culling in **`r round(cull$runs_with_lower_total_loss_pct, 1)`%
+of the matched scenarios**. The average number of affected farms fell from
+`r round(cull$mean_baseline_farms_affected, 1)` to
+`r round(cull$mean_cull_farms_affected, 1)`, while an average of
+`r round(cull$mean_farms_culled, 1)` farms were culled.
+
+This result shows the trade-off clearly. Culling accepts a smaller, immediate
+production loss to prevent a much larger chain. It does not mean this exact
+result would occur in practice. The benefit depends on finding active farms,
+reaching `r round(cull$coverage_pct)`% coverage, acting within
+`r cull$response_delay_days` day, and maintaining the daily culling capacity.
+Those assumptions should be tested against realistic response capability.
 
 ## How the result differs by production type
 

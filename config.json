@@ -59,6 +59,12 @@
     "barn_allocation_rate": 0.45,
     "barn_protection_efficiency": 0.70
   },
+  "cull_response": {
+    "compare_with_no_control": true,
+    "coverage": 0.80,
+    "response_delay_days": 1,
+    "maximum_farms_per_day": 10
+  },
   "spatial_bounds": {
     "minimum_longitude": 166.0,
     "maximum_longitude": 179.0,

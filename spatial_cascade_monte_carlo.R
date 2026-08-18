@@ -19,6 +19,10 @@ COOLDOWN_PHASE_C <- config$model_parameters$active_period_days
 BASE_YIELD <- config$production_metrics$average_bird_yield
 ALLOC_RATE <- config$housing_attributes$barn_allocation_rate
 PROT_EFFICIENCY <- config$housing_attributes$barn_protection_efficiency
+CULL_COMPARISON <- config$cull_response$compare_with_no_control %||% TRUE
+CULL_COVERAGE <- config$cull_response$coverage %||% 0.8
+CULL_RESPONSE_DELAY <- config$cull_response$response_delay_days %||% 1L
+CULL_DAILY_CAPACITY <- config$cull_response$maximum_farms_per_day %||% 10L
 
 meta <- config$scenario_metadata
 SCENARIO_NAME <- meta$name
@@ -62,6 +66,13 @@ assert_number(COOLDOWN_PHASE_B, "incubation_period_days", 1, TRUE)
 assert_number(COOLDOWN_PHASE_C, "active_period_days", 1, TRUE)
 assert_number(PROT_EFFICIENCY, "barn_protection_efficiency", 0)
 if (PROT_EFFICIENCY > 1) stop("Protection efficiency must be at most 1.")
+if (!is.logical(CULL_COMPARISON) || length(CULL_COMPARISON) != 1L) {
+  stop("cull_response.compare_with_no_control must be true or false.")
+}
+assert_number(CULL_COVERAGE, "cull_response.coverage", 0)
+if (CULL_COVERAGE > 1) stop("cull_response.coverage must be at most 1.")
+assert_number(CULL_RESPONSE_DELAY, "cull_response.response_delay_days", 0, TRUE)
+assert_number(CULL_DAILY_CAPACITY, "cull_response.maximum_farms_per_day", 1, TRUE)
 if (!START_MODE %in% c("random", "each_farm")) stop("starting_location_mode must be random or each_farm.")
 
 haversine_distance <- function(lon1, lat1, lon2, lat2) {
@@ -150,32 +161,73 @@ type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
                            dimnames = list(NULL, types, groups))
 group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L, dimnames = list(NULL, groups))
 farm_start_count <- farm_affected_count <- farm_lost_count <- integer(POPULATION_SIZE)
+baseline_affected_count_log <- baseline_lost_count_log <- numeric(MONTE_CARLO_RUNS)
+cull_total_loss_log <- cull_direct_loss_log <- cull_affected_count_log <-
+  cull_lost_count_log <- cull_farm_count_log <- net_loss_avoided_log <-
+  rep(NA_real_, MONTE_CARLO_RUNS)
 
-for (sim in seq_len(MONTE_CARLO_RUNS)) {
-  state <- rep("A", POPULATION_SIZE); timer_b <- timer_c <- integer(POPULATION_SIZE)
-  seeds <- start_sets[[sim]]; state[seeds] <- "C"
-  farm_start_count[seeds] <- farm_start_count[seeds] + 1L
+simulate_run <- function(seeds, transmission_rolls, coverage_rolls,
+                         apply_culling = FALSE) {
+  state <- rep("A", POPULATION_SIZE)
+  timer_b <- timer_c <- integer(POPULATION_SIZE)
+  selected_for_cull <- culled <- rep(FALSE, POPULATION_SIZE)
+  cull_due_day <- rep(NA_integer_, POPULATION_SIZE)
+  state[seeds] <- "C"
+
+  if (apply_culling) {
+    selected_for_cull[seeds] <- coverage_rolls[seeds] <= CULL_COVERAGE
+    selected_seeds <- seeds[selected_for_cull[seeds]]
+    if (length(selected_seeds)) cull_due_day[selected_seeds] <- CULL_RESPONSE_DELAY
+  }
 
   for (day in seq_len(SIM_DURATION)) {
-    active <- which(state == "C"); targets <- which(state == "A")
-    existing_b <- which(state == "B"); existing_c <- active
+    if (apply_culling) {
+      due <- which(state == "C" & selected_for_cull & !culled &
+                     !is.na(cull_due_day) & cull_due_day <= day)
+      if (length(due)) {
+        due <- due[order(cull_due_day[due], farms$id[due])]
+        to_cull <- head(due, CULL_DAILY_CAPACITY)
+        culled[to_cull] <- TRUE
+        state[to_cull] <- "D"
+      }
+    }
+
+    active <- which(state == "C")
+    targets <- which(state == "A")
+    existing_b <- which(state == "B")
+    existing_c <- active
+
     if (length(active) && length(targets)) {
       new_b <- integer()
       for (target in targets) {
-        sources <- active
-        raw <- exp(-LAMBDA * distance_km[target, sources])
+        raw <- exp(-LAMBDA * distance_km[target, active])
         protection <- if (farms$is_sheltered[target]) 1 - PROT_EFFICIENCY else 1
-        adjusted <- raw * protection * barrier_multiplier[target, sources]
+        adjusted <- raw * protection * barrier_multiplier[target, active]
         final_probability <- 1 - prod(1 - pmin(1, pmax(0, adjusted)))
-        if (runif(1) <= final_probability) new_b <- c(new_b, target)
+        if (transmission_rolls[day, target] <= final_probability) {
+          new_b <- c(new_b, target)
+        }
       }
-      if (length(new_b)) { state[new_b] <- "B"; timer_b[new_b] <- 0L }
+      if (length(new_b)) {
+        state[new_b] <- "B"
+        timer_b[new_b] <- 0L
+      }
     }
+
     if (length(existing_b)) {
       timer_b[existing_b] <- timer_b[existing_b] + 1L
       new_c <- existing_b[timer_b[existing_b] >= COOLDOWN_PHASE_B]
-      if (length(new_c)) { state[new_c] <- "C"; timer_c[new_c] <- 0L }
+      if (length(new_c)) {
+        state[new_c] <- "C"
+        timer_c[new_c] <- 0L
+        if (apply_culling) {
+          selected_for_cull[new_c] <- coverage_rolls[new_c] <= CULL_COVERAGE
+          selected <- new_c[selected_for_cull[new_c]]
+          if (length(selected)) cull_due_day[selected] <- day + CULL_RESPONSE_DELAY
+        }
+      }
     }
+
     if (length(existing_c)) {
       timer_c[existing_c] <- timer_c[existing_c] + 1L
       new_d <- existing_c[timer_c[existing_c] >= COOLDOWN_PHASE_C]
@@ -183,10 +235,25 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
     }
   }
 
-  affected <- state != "A"; lost <- state == "D"
+  list(state = state, affected = state != "A", lost = state == "D",
+       culled = culled)
+}
+
+for (sim in seq_len(MONTE_CARLO_RUNS)) {
+  seeds <- start_sets[[sim]]
+  farm_start_count[seeds] <- farm_start_count[seeds] + 1L
+  transmission_rolls <- matrix(runif(SIM_DURATION * POPULATION_SIZE),
+                               nrow = SIM_DURATION)
+  coverage_rolls <- runif(POPULATION_SIZE)
+  baseline <- simulate_run(seeds, transmission_rolls, coverage_rolls, FALSE)
+  state <- baseline$state
+  affected <- baseline$affected
+  lost <- baseline$lost
   farm_affected_count <- farm_affected_count + affected
   farm_lost_count <- farm_lost_count + lost
   production_loss_log[sim] <- sum(farms$production_yield[lost])
+  baseline_affected_count_log[sim] <- sum(affected)
+  baseline_lost_count_log[sim] <- sum(lost)
   for (type in types) {
     type_rows <- farms$production_type == type
     type_loss_log[sim, type] <- sum(farms$production_yield[type_rows & lost])
@@ -200,6 +267,16 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
   for (group in groups) {
     rows <- farms$is_sheltered == identical(group, SHELTERED_LABEL)
     group_survival_log[sim, group] <- 100 * sum(rows & state == "A") / sum(rows)
+  }
+
+  if (CULL_COMPARISON) {
+    controlled <- simulate_run(seeds, transmission_rolls, coverage_rolls, TRUE)
+    cull_total_loss_log[sim] <- sum(farms$production_yield[controlled$lost])
+    cull_direct_loss_log[sim] <- sum(farms$production_yield[controlled$culled])
+    cull_affected_count_log[sim] <- sum(controlled$affected)
+    cull_lost_count_log[sim] <- sum(controlled$lost)
+    cull_farm_count_log[sim] <- sum(controlled$culled)
+    net_loss_avoided_log[sim] <- production_loss_log[sim] - cull_total_loss_log[sim]
   }
 }
 
@@ -239,12 +316,55 @@ summary_table <- data.frame(scenario = SCENARIO_NAME, monte_carlo_runs = MONTE_C
   protection_benefit_percentage_points = average_survival[SHELTERED_LABEL] - average_survival[UNSHELTERED_LABEL])
 write.csv(summary_table, file.path(assets_dir, "spatial_cascade_summary.csv"), row.names = FALSE)
 
+cull_comparison_summary <- NULL
+if (CULL_COMPARISON) {
+  cull_comparison_runs <- data.frame(
+    run = seq_len(MONTE_CARLO_RUNS),
+    baseline_total_loss = production_loss_log,
+    cull_total_loss = cull_total_loss_log,
+    direct_cull_loss = cull_direct_loss_log,
+    net_loss_avoided = net_loss_avoided_log,
+    baseline_farms_affected = baseline_affected_count_log,
+    cull_farms_affected = cull_affected_count_log,
+    baseline_farms_lost = baseline_lost_count_log,
+    cull_farms_lost = cull_lost_count_log,
+    farms_culled = cull_farm_count_log)
+  write.csv(cull_comparison_runs,
+            file.path(assets_dir, "spatial_cascade_cull_comparison.csv"),
+            row.names = FALSE)
+
+  cull_comparison_summary <- data.frame(
+    runs = MONTE_CARLO_RUNS,
+    coverage_pct = 100 * CULL_COVERAGE,
+    response_delay_days = CULL_RESPONSE_DELAY,
+    maximum_farms_culled_per_day = CULL_DAILY_CAPACITY,
+    mean_baseline_total_loss = mean(production_loss_log),
+    mean_cull_total_loss = mean(cull_total_loss_log),
+    mean_direct_cull_loss = mean(cull_direct_loss_log),
+    mean_net_loss_avoided = mean(net_loss_avoided_log),
+    net_loss_reduction_pct = 100 * mean(net_loss_avoided_log) /
+      mean(production_loss_log),
+    runs_with_lower_total_loss_pct = 100 * mean(cull_total_loss_log < production_loss_log),
+    mean_baseline_farms_affected = mean(baseline_affected_count_log),
+    mean_cull_farms_affected = mean(cull_affected_count_log),
+    mean_farms_culled = mean(cull_farm_count_log),
+    net_loss_avoided_p05 = unname(quantile(net_loss_avoided_log, .05)),
+    net_loss_avoided_p95 = unname(quantile(net_loss_avoided_log, .95)))
+  write.csv(cull_comparison_summary,
+            file.path(assets_dir, "spatial_cascade_cull_comparison_summary.csv"),
+            row.names = FALSE)
+}
+
 results <- list(scenario = SCENARIO_NAME, configuration = config, farms = farms,
   population_size = POPULATION_SIZE, population_size_source = paste("fixed table", INPUT_FILE),
   starting_location_mode = START_MODE, monte_carlo_runs = MONTE_CARLO_RUNS,
   production_loss_log = production_loss_log, production_loss_by_type_log = type_loss_log,
   lost_count_by_type_log = type_lost_count_log, survival_by_type_and_shelter_log = type_survival_log,
-  average_survival = average_survival, farm_risk_summary = farm_risk)
+  average_survival = average_survival, farm_risk_summary = farm_risk,
+  cull_comparison_summary = cull_comparison_summary,
+  cull_total_loss_log = if (CULL_COMPARISON) cull_total_loss_log else NULL,
+  direct_cull_loss_log = if (CULL_COMPARISON) cull_direct_loss_log else NULL,
+  net_loss_avoided_log = if (CULL_COMPARISON) net_loss_avoided_log else NULL)
 saveRDS(results, file.path(assets_dir, "spatial_cascade_results.rds"))
 
 report_theme <- theme_minimal(base_size = 12) + theme(
@@ -285,10 +405,28 @@ farm_risk_plot <- ggplot() +
   theme(legend.position = "right", axis.text = element_blank(),
         axis.ticks = element_blank())
 
+if (CULL_COMPARISON) {
+  cull_plot_data <- rbind(
+    data.frame(response = "No control", total_loss = production_loss_log),
+    data.frame(response = "Cull", total_loss = cull_total_loss_log))
+  cull_comparison_plot <- ggplot(cull_plot_data,
+      aes(response, total_loss, fill = response)) +
+    geom_boxplot(width = .58, outlier.alpha = .18) +
+    scale_fill_manual(values = c("No control" = "#7B8790", "Cull" = "#167D8D")) +
+    labs(title = "Total loss with and without culling",
+         subtitle = paste0(CULL_COVERAGE * 100, "% coverage, ",
+           CULL_RESPONSE_DELAY, "-day response delay, up to ",
+           CULL_DAILY_CAPACITY, " farms culled per day"),
+         x = NULL, y = VALUE_AXIS_LABEL) + report_theme
+}
+
 plots <- list(spatial_cascade_loss_distribution = loss_plot,
   spatial_cascade_loss_by_production_type = type_loss_plot,
   spatial_cascade_survival_comparison = survival_plot,
   spatial_cascade_farm_risk_map = farm_risk_plot)
+if (CULL_COMPARISON) {
+  plots$spatial_cascade_cull_comparison <- cull_comparison_plot
+}
 for (nm in names(plots)) ggsave(file.path(assets_dir, paste0(nm, ".svg")), plots[[nm]], device = grDevices::svg, width = 9, height = 6, bg = "white")
 if (interactive()) invisible(lapply(plots, print))
 invisible(results)

@@ -33,6 +33,12 @@ farm's production capacity as lost. Policy coverage represents the proportion
 of active farms that can be reached by the response programme. `None` provides
 the no-policy comparison.
 
+The Monte Carlo analysis also runs a matched no-control versus culling
+comparison. Configure response coverage, delay and maximum farms culled per day
+under `cull_response` in `config.json`. Its run-level and summary results, plus
+the comparison chart, are written to `assets/` and interpreted in the Quarto
+report.
+
 North and South Island trucks are always kept separate.
 
 ## Main files
