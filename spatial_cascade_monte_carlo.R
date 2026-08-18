@@ -22,7 +22,6 @@ PROT_EFFICIENCY <- config$housing_attributes$barn_protection_efficiency
 CULL_COMPARISON <- config$cull_response$compare_with_no_control %||% TRUE
 CULL_COVERAGE <- config$cull_response$coverage %||% 0.8
 CULL_RESPONSE_DELAY <- config$cull_response$response_delay_days %||% 1L
-CULL_DAILY_CAPACITY <- config$cull_response$maximum_farms_per_day %||% 10L
 
 meta <- config$scenario_metadata
 SCENARIO_NAME <- meta$name
@@ -72,7 +71,6 @@ if (!is.logical(CULL_COMPARISON) || length(CULL_COMPARISON) != 1L) {
 assert_number(CULL_COVERAGE, "cull_response.coverage", 0)
 if (CULL_COVERAGE > 1) stop("cull_response.coverage must be at most 1.")
 assert_number(CULL_RESPONSE_DELAY, "cull_response.response_delay_days", 0, TRUE)
-assert_number(CULL_DAILY_CAPACITY, "cull_response.maximum_farms_per_day", 1, TRUE)
 if (!START_MODE %in% c("random", "each_farm")) stop("starting_location_mode must be random or each_farm.")
 
 haversine_distance <- function(lon1, lat1, lon2, lat2) {
@@ -186,7 +184,7 @@ simulate_run <- function(seeds, transmission_rolls, coverage_rolls,
                      !is.na(cull_due_day) & cull_due_day <= day)
       if (length(due)) {
         due <- due[order(cull_due_day[due], farms$id[due])]
-        to_cull <- head(due, CULL_DAILY_CAPACITY)
+        to_cull <- due
         culled[to_cull] <- TRUE
         state[to_cull] <- "D"
       }
@@ -337,7 +335,6 @@ if (CULL_COMPARISON) {
     runs = MONTE_CARLO_RUNS,
     coverage_pct = 100 * CULL_COVERAGE,
     response_delay_days = CULL_RESPONSE_DELAY,
-    maximum_farms_culled_per_day = CULL_DAILY_CAPACITY,
     mean_baseline_total_loss = mean(production_loss_log),
     mean_cull_total_loss = mean(cull_total_loss_log),
     mean_direct_cull_loss = mean(cull_direct_loss_log),
@@ -415,8 +412,7 @@ if (CULL_COMPARISON) {
     scale_fill_manual(values = c("No control" = "#7B8790", "Cull" = "#167D8D")) +
     labs(title = "Total loss with and without culling",
          subtitle = paste0(CULL_COVERAGE * 100, "% coverage, ",
-           CULL_RESPONSE_DELAY, "-day response delay, up to ",
-           CULL_DAILY_CAPACITY, " farms culled per day"),
+           CULL_RESPONSE_DELAY, "-day response delay"),
          x = NULL, y = VALUE_AXIS_LABEL) + report_theme
 }
 

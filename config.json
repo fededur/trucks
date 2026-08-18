@@ -62,8 +62,7 @@
   "cull_response": {
     "compare_with_no_control": true,
     "coverage": 0.80,
-    "response_delay_days": 1,
-    "maximum_farms_per_day": 10
+    "response_delay_days": 1
   },
   "spatial_bounds": {
     "minimum_longitude": 166.0,

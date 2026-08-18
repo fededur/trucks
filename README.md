@@ -34,8 +34,9 @@ of active farms that can be reached by the response programme. `None` provides
 the no-policy comparison.
 
 The Monte Carlo analysis also runs a matched no-control versus culling
-comparison. Configure response coverage, delay and maximum farms culled per day
-under `cull_response` in `config.json`. Its run-level and summary results, plus
+comparison. Configure response coverage and delay under `cull_response` in
+`config.json`. Covered farms are culled as soon as the
+response delay expires. Its run-level and summary results, plus
 the comparison chart, are written to `assets/` and interpreted in the Quarto
 report.
 
