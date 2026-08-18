@@ -84,6 +84,10 @@ island_story <- function(group_name) {
 island_comparison <- rbind(island_story(north_name), island_story(south_name))
 north <- island_comparison[island_comparison$group == north_name, ]
 south <- island_comparison[island_comparison$group == south_name, ]
+cull_north_probability <- mean(cull_farm_risk$probability_lost_pct[
+  cull_farm_risk$barrier_group == north_name])
+cull_south_probability <- mean(cull_farm_risk$probability_lost_pct[
+  cull_farm_risk$barrier_group == south_name])
 types$expected_loss_pct <- vapply(types$production_type, function(type) {
   type_birds <- sum(farms$production_yield[farms$production_type == type])
   100 * types$mean_total_production_loss[types$production_type == type] /
@@ -128,11 +132,13 @@ appendix.
 - Without culling, the expected share of birds lost by production type is
   **`r type_loss_comparison`**.
 
-- North Island farms are more exposed: their average chance of being lost is
-  **`r round(north$mean_lost_probability, 1)`%**, compared with
-  **`r round(south$mean_lost_probability, 1)`%** in the South Island. More farms
-  are in the North Island, making a random start there more likely, while
-  spread between islands is blocked.
+- Without culling, the average chance of a farm being lost is
+  **`r round(north$mean_lost_probability, 1)`% in the North Island** and
+  **`r round(south$mean_lost_probability, 1)`% in the South Island**. With
+  culling, this falls to **`r round(cull_north_probability, 1)`%** and
+  **`r round(cull_south_probability, 1)`%**, respectively. The North Island
+  remains more exposed because more farms are located there, making a random
+  start there more likely, while spread between islands is blocked.
 
 - These findings can help compare response choices and focus preparedness.
   They should not be read as a forecast of a future outbreak.
