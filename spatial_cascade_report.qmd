@@ -84,14 +84,66 @@ More runs make the pattern steadier, but they do not make the assumptions more
 realistic. The value of the results still depends on the farm data and the
 settings used.
 
+## The production base used in every scenario
+
+The simulation starts from the same national production base in every run.
+The table provides context before any loss is modelled. The farm-level figures
+describe how capacity is distributed across farms; they are not simulation
+results.
+
+```{r}
+#| label: production-reference-table
+#| tbl-cap: "Production-capacity reference for the fixed farm population"
+capacity_reference_row <- function(label, rows) {
+  capacity <- farms$production_yield[rows]
+  data.frame(
+    `Production type` = label,
+    Farms = length(capacity),
+    `Total capacity` = sum(capacity),
+    `Share of national capacity` = 100 * sum(capacity) /
+      sum(farms$production_yield),
+    `Average per farm` = mean(capacity),
+    `Median per farm` = median(capacity),
+    `Middle half per farm` = paste0(
+      format(round(unname(quantile(capacity, .25))), big.mark = ","), " to ",
+      format(round(unname(quantile(capacity, .75))), big.mark = ",")),
+    `Minimum to maximum per farm` = paste0(
+      format(round(min(capacity)), big.mark = ","), " to ",
+      format(round(max(capacity)), big.mark = ",")),
+    check.names = FALSE)
+}
+capacity_reference <- do.call(rbind, c(
+  lapply(sort(unique(farms$production_type)), function(type) {
+    capacity_reference_row(type, farms$production_type == type)
+  }),
+  list(capacity_reference_row("Grand total", rep(TRUE, nrow(farms))))))
+capacity_reference$`Total capacity` <- paste(
+  format(round(capacity_reference$`Total capacity`), big.mark = ","), capacity_unit)
+capacity_reference$`Share of national capacity` <- paste0(
+  round(capacity_reference$`Share of national capacity`, 1), "%")
+capacity_reference$`Average per farm` <- paste(
+  format(round(capacity_reference$`Average per farm`), big.mark = ","), capacity_unit)
+capacity_reference$`Median per farm` <- paste(
+  format(round(capacity_reference$`Median per farm`), big.mark = ","), capacity_unit)
+capacity_reference$`Middle half per farm` <- paste(
+  capacity_reference$`Middle half per farm`, capacity_unit)
+capacity_reference$`Minimum to maximum per farm` <- paste(
+  capacity_reference$`Minimum to maximum per farm`, capacity_unit)
+knitr::kable(capacity_reference, row.names = FALSE)
+```
+
+The **Grand total** row gives the full capacity at risk. Its average, median and
+ranges describe individual farms across the complete input population.
+
 ## What happened across the whole farm population
 
-![Total production-capacity loss across `r format(runs, big.mark = ",")` complete `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms in the fixed input population. The horizontal axis is the total `r capacity_unit` lost across the whole population in one run; the vertical axis is the number of runs with a similar loss. The dashed line is the average across runs.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Histogram of total production capacity lost across complete Monte Carlo runs over the full fixed farm population"}
+![Production lost and remaining across `r format(runs, big.mark = ",")` complete `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms. Each thin vertical bar is one complete scenario and always totals 100%. Scenarios are sorted from lower to higher loss to make the range visible; their left-to-right order is not time and is not the order in which they were run.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="One hundred percent stacked bars showing production lost and remaining in each complete Monte Carlo scenario, ordered from lower to higher loss"}
 
-The easiest way to read the chart is to choose one bar and say: **this many
-complete scenarios finished with a total population loss around this level**.
-The value combines the loss from every farm. It is not an average loss for one
-farm, and it is not the chance of a real event beginning.
+Each bar represents one possible national outcome. The orange share is
+production lost and the grey share is production remaining. A bar that is 80%
+orange means that scenario ended with 80% of national capacity lost. The chart
+shows the spread of possible outcomes without turning the number of runs into
+an apparent trend.
 
 Across the repeated scenarios, average total loss was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about

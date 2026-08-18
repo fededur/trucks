@@ -415,10 +415,31 @@ saveRDS(results, file.path(assets_dir, "spatial_cascade_results.rds"))
 report_theme <- theme_minimal(base_size = 12) + theme(
   plot.title = element_text(face = "bold", colour = "#173B57"),
   plot.subtitle = element_text(colour = "#526575"), panel.grid.minor = element_blank(), legend.position = "none")
-loss_plot <- ggplot(data.frame(loss = production_loss_log), aes(loss)) +
-  geom_histogram(bins = max(12, round(sqrt(MONTE_CARLO_RUNS))), fill = "#2A788E", colour = "white") +
-  geom_vline(xintercept = mean(production_loss_log), colour = "#E76F51", linewidth = 1, linetype = "dashed") +
-  labs(title = paste(SCENARIO_NAME, "loss distribution"), subtitle = paste(MONTE_CARLO_RUNS, "runs over one fixed farm population"), x = VALUE_AXIS_LABEL, y = "Simulation runs") + report_theme
+total_population_capacity <- sum(farms$production_yield)
+ordered_loss <- sort(production_loss_log / total_population_capacity)
+loss_plot_data <- rbind(
+  data.frame(scenario_order = seq_along(ordered_loss),
+             outcome = "Production remaining", share = 1 - ordered_loss),
+  data.frame(scenario_order = seq_along(ordered_loss),
+             outcome = "Production lost", share = ordered_loss))
+loss_plot_data$outcome <- factor(loss_plot_data$outcome,
+  levels = c("Production lost", "Production remaining"))
+loss_plot <- ggplot(loss_plot_data,
+                    aes(scenario_order, share, fill = outcome)) +
+  geom_col(width = 1, colour = NA) +
+  scale_fill_manual(values = c("Production lost" = "#E76F51",
+                               "Production remaining" = "#D8E1E6"),
+                    name = NULL) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, .25),
+                     labels = function(x) paste0(round(100 * x), "%"),
+                     expand = c(0, 0)) +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+  labs(title = paste(SCENARIO_NAME, "production outcome across repeated scenarios"),
+       subtitle = paste(MONTE_CARLO_RUNS,
+         "complete scenarios, ordered from lower to higher percentage loss"),
+       x = "Complete scenarios (ordered by loss, not time)",
+       y = "Share of national production capacity") +
+  report_theme + theme(legend.position = "top")
 type_loss_data <- as.data.frame(as.table(type_loss_log)); names(type_loss_data) <- c("run", "production_type", "loss")
 type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = production_type)) +
   geom_boxplot(width = .62, outlier.alpha = .2) + scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +
