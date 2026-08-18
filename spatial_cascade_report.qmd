@@ -43,7 +43,6 @@ capacity_unit <- config$production_metrics$production_capacity_unit
 if (is.null(capacity_unit) || !length(capacity_unit)) capacity_unit <- "birds"
 mean_loss_share <- 100 * summary$mean_production_loss /
   sum(farms$production_yield)
-protection_difference <- summary$protection_benefit_percentage_points
 cull <- results$cull_comparison_summary
 farm_risk <- results$farm_risk_summary
 cull_farm_risk <- results$cull_farm_risk_summary
@@ -315,42 +314,31 @@ middle result. The “middle half” leaves out the lowest and highest quarter o
 the modelled outbreaks and shows how much the total can vary. The **Total** row covers
 the full national farm population.
 
-## Farm location can outweigh the apparent shelter pattern
+## Protection contributes to keeping farms unaffected
 
-![Average share of sheltered and unsheltered farms remaining unaffected at the end of the modelled outbreaks, shown by production type and split into No culling and Culling panels. Both panels use the same percentage scale.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Comparison of sheltered and unsheltered farms remaining unaffected by production type, with no culling and with culling"}
+![Protection contributes to farm survival across both production types.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of protected and unprotected farms remaining unaffected by production type, with no culling and with culling"}
 
-Without culling, sheltered survival averaged
+The figure compares the share of farms that remain unaffected for each
+production type and protection level. Without culling, the share remaining
+unaffected averaged
 **`r round(summary$sheltered_survival_pct, 1)`%**, compared with
-**`r round(summary$unsheltered_survival_pct, 1)`%** for unsheltered farms. The difference was
+**`r round(summary$unsheltered_survival_pct, 1)`%** for farms without protection.
+The difference was
 **`r round(summary$protection_benefit_percentage_points, 1)` percentage
 points**. With culling, the corresponding averages were
 **`r round(cull_average_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
 and **`r round(cull_average_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**.
-This compares the two management responses fairly: the farm population and
-starting locations are the same, and both versions face the same chance events.
 
-```{r}
-#| results: asis
-if (protection_difference < 0) {
-  cat(paste0(
-    "In these results, a slightly smaller share of sheltered farms remains unaffected. ",
-    "rate. This does **not** mean shelter causes harm. The sheltered farms may ",
-    "simply be in more exposed places or may have been chosen as starting ",
-    "farms more often. The chart describes this farm population; it does not ",
-    "prove what shelter caused.\n"
-  ))
-} else {
-  cat(paste0(
-    "A larger share of sheltered farms remains unaffected in these results. Some of ",
-    "that difference may still come from where those farms are located, so it ",
-    "should not be treated as proof of the shelter effect on its own.\n"
-  ))
-}
-```
+Protection reduces the chance that an outbreak reaches a protected farm. It
+therefore contributes to keeping farms, and the birds held at those farms,
+unaffected. It does not guarantee survival: the final result also depends on
+where an outbreak starts and which farms it reaches first. This is why the
+size of the protection benefit can differ between production types.
 
-The cleanest future test would compare the same farms and the same starting
-conditions twice: once with shelter protection and once without it. That would
-separate the modelled shelter effect from differences in farm location.
+The bars describe the final outcomes for the farms in each group; they do not
+measure protection on its own. The practical message is that protection adds a
+layer of defence, while culling can further limit the wider outbreak. They are
+complementary measures rather than alternatives.
 
 ## Some farming areas are exposed more often than others
 
