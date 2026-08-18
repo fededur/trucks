@@ -1,6 +1,6 @@
 ---
-title: "How Production Loss Could Spread Across New Zealand Farms"
-subtitle: "A practical account of the scenario and its results"
+title: "How Bird Loss Could Spread Across New Zealand Farms"
+subtitle: "A practical comparison of no culling and culling"
 format:
   html:
     toc: true
@@ -53,55 +53,35 @@ north <- island_comparison[island_comparison$group == north_name, ]
 south <- island_comparison[island_comparison$group == south_name, ]
 ```
 
-## The story this model tells
+## Overview of the approach
 
 This analysis asks a practical question: if a harmful event begins on a small
-number of farms, how far could it spread and how much production could be lost?
-It follows the real farm locations and attributes supplied in
-`r config$input_data$file`.
+number of farms, how many birds could be lost, where could those losses occur,
+and how much difference could a culling response make?
 
-The current population contains **`r format(nrow(farms), big.mark = ",")` farms**.
-Each dot on the map is one of those farms. Its location, region,
-production type, shelter category and production capacity stay the same in
-every scenario. Production type is used to describe the results. Shelter also
-changes the modelled chance of a farm being reached.
+The analysis uses the fixed farm locations and attributes in
+`r config$input_data$file`. It compares the same possible events twice: first
+with no culling and then with the configured culling response. The two versions
+start in the same places and use the same prepared chance values, so the main
+difference is the management response. Detailed model settings and the reason
+for repeating the scenarios are provided in the appendix.
 
-At the start of a scenario, every farm is unaffected. The event begins at
-`r config$simulation_controls$initial_phase_c_entities` selected farms and the
-model follows the next `r days` days. A farm can be reached, spend time in an
-incubation period, become able to affect other farms, and finally have its
-production counted as lost. Nearby farms are more likely to be reached than
-distant farms, although the outcome still includes chance.
+## Birds in the farm population
 
-## Why the scenario is repeated
-
-One run gives only one possible chain of events. This analysis repeats the
-whole scenario **`r format(runs, big.mark = ",")` times** over the same farm
-population. The starting locations and the chance outcomes can differ from one
-run to the next. Looking across all runs shows which outcomes are common and
-which sit at the more severe end of the range.
-
-More runs make the pattern steadier, but they do not make the assumptions more
-realistic. The value of the results still depends on the farm data and the
-settings used.
-
-## The production base used in every scenario
-
-The simulation starts from the same national production base in every run.
-The table provides context before any loss is modelled. The farm-level figures
-describe how capacity is distributed across farms; they are not simulation
-results.
+Every scenario starts with the same birds and farms. This table provides the
+starting context before any birds are lost. The farm-level figures describe
+how birds are distributed across farms; they are not results.
 
 ```{r}
 #| label: production-reference-table
-#| tbl-cap: "Production-capacity reference for the fixed farm population"
+#| tbl-cap: "Birds in the fixed farm population"
 capacity_reference_row <- function(label, rows) {
   capacity <- farms$production_yield[rows]
   data.frame(
     `Production type` = label,
     Farms = length(capacity),
-    `Total capacity` = sum(capacity),
-    `Share of national capacity` = 100 * sum(capacity) /
+    `Total birds` = sum(capacity),
+    `Share of all birds` = 100 * sum(capacity) /
       sum(farms$production_yield),
     `Average per farm` = mean(capacity),
     `Median per farm` = median(capacity),
@@ -118,10 +98,10 @@ capacity_reference <- do.call(rbind, c(
     capacity_reference_row(type, farms$production_type == type)
   }),
   list(capacity_reference_row("Grand total", rep(TRUE, nrow(farms))))))
-capacity_reference$`Total capacity` <- paste(
-  format(round(capacity_reference$`Total capacity`), big.mark = ","), capacity_unit)
-capacity_reference$`Share of national capacity` <- paste0(
-  round(capacity_reference$`Share of national capacity`, 1), "%")
+capacity_reference$`Total birds` <- format(
+  round(capacity_reference$`Total birds`), big.mark = ",")
+capacity_reference$`Share of all birds` <- paste0(
+  round(capacity_reference$`Share of all birds`, 1), "%")
 capacity_reference$`Average per farm` <- paste(
   format(round(capacity_reference$`Average per farm`), big.mark = ","), capacity_unit)
 capacity_reference$`Median per farm` <- paste(
@@ -133,16 +113,16 @@ capacity_reference$`Minimum to maximum per farm` <- paste(
 knitr::kable(capacity_reference, row.names = FALSE)
 ```
 
-The **Grand total** row gives the full capacity at risk. Its average, median and
+The **Grand total** row gives all birds included in the analysis. Its average, median and
 ranges describe individual farms across the complete input population.
 
-## What happened across the whole farm population
+## National bird losses
 
-![Production lost and remaining across `r format(runs, big.mark = ",")` matched `r days`-day simulations of all `r format(nrow(farms), big.mark = ",")` farms, shown separately with no culling and with culling. Each thin vertical bar is one complete scenario and always totals 100%. Within each panel, scenarios are sorted from lower to higher loss; their left-to-right order is not time or run order.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Faceted one hundred percent stacked bars comparing production lost and remaining in matched scenarios with no culling and with culling"}
+![Birds lost and remaining across the matched scenarios, shown separately with no culling and with culling. Each thin bar is one complete scenario and totals 100%. Within each panel, scenarios are sorted from lower to higher loss; the order is not time.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in scenarios with no culling and with culling"}
 
-Each bar represents one possible national outcome. The orange share is
-production lost and the grey share is production remaining. A bar that is 80%
-orange means that scenario ended with 80% of national capacity lost. The two
+Each bar represents one possible national outcome. The orange share is birds
+lost and the grey share is birds remaining. A bar that is 80% orange means
+that scenario ended with 80% of all birds lost. The two
 panels use the same percentage scale. Comparing their orange areas shows how
 the culling response shifts the range of national outcomes. The sorting is
 done separately in each panel, so bars in the same horizontal position are not
@@ -150,8 +130,7 @@ necessarily the same matched run.
 
 Across the repeated scenarios, average total loss was
 **`r format(round(summary$mean_production_loss), big.mark = ",")` `r capacity_unit`**, about
-**`r round(mean_loss_share, 1)`%** of the fixed population's production
-capacity. Nine out of ten scenarios finished between
+**`r round(mean_loss_share, 1)`%** of all birds. Nine out of ten scenarios finished between
 **`r format(round(summary$loss_p05), big.mark = ",")` and
 `r format(round(summary$loss_p95), big.mark = ",")` `r capacity_unit` lost**.
 
@@ -161,23 +140,18 @@ a more severe outcome could look like. Because loss is already high in most
 runs, moderate changes to protection may be difficult to distinguish unless
 the spread and timing settings are well supported by evidence.
 
-## What changes when culling is used
-
-The analysis also repeats every scenario with a culling response. This is a
-fair comparison: the no-control and culling versions begin at the same farms
-and use the same prepared chance values. The only intended difference is the
-response.
+## The difference made by culling
 
 The current policy reaches **`r round(cull$coverage_pct)`% of active farms**,
 then culls each covered farm **`r cull$response_delay_days` day** after it
 becomes active. There is no separate daily limit: once the response delay has
 passed, every identified farm is culled.
 
-![Total production-capacity loss across matched scenarios, split into No culling and Culling panels on the same scale. Each box shows the middle half of results, its centre line is the median, and the whiskers and points show the wider range. Culling loss includes production removed directly through culling as well as farms otherwise reaching the lost state.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Faceted comparison of total production capacity loss in matched scenarios with no culling and with culling"}
+![Birds lost across matched scenarios, split into No culling and Culling panels on the same scale. Each box shows the middle half of results and its centre line is the median. The culling total includes birds removed directly through culling.](assets/spatial_cascade_cull_comparison.svg){#fig-cull-comparison fig-alt="Birds lost in matched scenarios with no culling and with culling"}
 
-Without control, average total loss was
+Without culling, average loss was
 **`r format(round(cull$mean_baseline_total_loss), big.mark = ",")` `r capacity_unit`**.
-With culling, average total loss was
+With culling, average loss was
 **`r format(round(cull$mean_cull_total_loss), big.mark = ",")` `r capacity_unit`**.
 That culling total already includes about
 **`r format(round(cull$mean_direct_cull_loss), big.mark = ",")` `r capacity_unit`**
@@ -185,32 +159,32 @@ removed directly through culling.
 
 After counting that direct loss, the response avoided an average of
 **`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
-or **`r round(cull$net_loss_reduction_pct, 1)`% of the no-control loss**. Total
+or **`r round(cull$net_loss_reduction_pct, 1)`% of the no-culling loss**. Total
 loss was lower with culling in **`r round(cull$runs_with_lower_total_loss_pct, 1)`%
 of the matched scenarios**. The average number of affected farms fell from
 `r round(cull$mean_baseline_farms_affected, 1)` to
 `r round(cull$mean_cull_farms_affected, 1)`, while an average of
 `r round(cull$mean_farms_culled, 1)` farms were culled.
 
-This result shows the trade-off clearly. Culling accepts a smaller, immediate
-production loss to prevent a much larger chain. It does not mean this exact
+This result shows the trade-off clearly. Culling removes birds earlier to
+prevent a much larger chain of bird losses. It does not mean this exact
 result would occur in practice. The benefit depends on finding active farms,
 reaching `r round(cull$coverage_pct)`% coverage, acting within
 `r cull$response_delay_days` day.
 Those assumptions should be tested against realistic response capability.
 
-## How the result differs by production type
+## Bird losses by production type
 
-![Total production capacity lost for each production type across the matched scenarios, split into No culling and Culling panels on the same scale. Each box describes total category loss across the whole population, not the loss of an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Faceted distribution of total production capacity loss by production type with no culling and with culling"}
+![Birds lost for each production type across the matched scenarios, split into No culling and Culling panels on the same scale. Each box describes all birds lost in that category, not an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Birds lost by production type with no culling and with culling"}
 
-Production type does not change how the event spreads in this model. It is used
-to show where the production consequences fall. A category with more farms or
-more capacity will generally have a larger total loss. The panels compare the
+Production type does not change how the event spreads. It shows where bird
+losses fall. A category with more farms or birds will generally have a larger
+total loss. The panels compare the
 same two management scenarios used throughout the report.
 
 ```{r}
 #| label: type-table
-#| tbl-cap: "What the repeated scenarios mean for each production type"
+#| tbl-cap: "Bird losses by production type and management response"
 make_type_rows <- function(scenario, loss_log, count_log) {
   rows <- lapply(colnames(loss_log), function(type) {
     in_type <- farms$production_type == type
@@ -218,7 +192,7 @@ make_type_rows <- function(scenario, loss_log, count_log) {
       Farms = sum(in_type), `Population share` = 100 * mean(in_type),
       `Average farms lost` = mean(count_log[, type]),
       `Average farms lost pct` = 100 * mean(count_log[, type]) / sum(in_type),
-      `Average total capacity lost` = mean(loss_log[, type]),
+      `Average birds lost` = mean(loss_log[, type]),
       `Loss p25` = unname(quantile(loss_log[, type], .25)),
       `Loss p75` = unname(quantile(loss_log[, type], .75)))
   })
@@ -229,7 +203,7 @@ make_type_rows <- function(scenario, loss_log, count_log) {
     Farms = nrow(farms), `Population share` = 100,
     `Average farms lost` = mean(total_count),
     `Average farms lost pct` = 100 * mean(total_count) / nrow(farms),
-    `Average total capacity lost` = mean(total_loss),
+    `Average birds lost` = mean(total_loss),
     `Loss p25` = unname(quantile(total_loss, .25)),
     `Loss p75` = unname(quantile(total_loss, .75)))
   do.call(rbind, rows)
@@ -244,11 +218,11 @@ display$`Population share` <- paste0(round(display$`Population share`, 1), "%")
 display$`Average farms lost` <- paste0(round(display$`Average farms lost`, 1),
   " (", round(display$`Average farms lost pct`, 1), "%)")
 display$`Average farms lost pct` <- NULL
-display$`Average total capacity lost` <- paste(
-  format(round(display$`Average total capacity lost`), big.mark = ","), capacity_unit)
+display$`Average birds lost` <- format(
+  round(display$`Average birds lost`), big.mark = ",")
 display$`Middle half of results` <- paste0(
   format(round(display$`Loss p25`), big.mark = ","), " to ",
-  format(round(display$`Loss p75`), big.mark = ","), " ", capacity_unit)
+  format(round(display$`Loss p75`), big.mark = ","), " birds")
 display$`Loss p25` <- display$`Loss p75` <- NULL
 knitr::kable(display, row.names = FALSE)
 ```
@@ -259,7 +233,7 @@ the more severe results cannot happen. The **Total** row describes the whole
 farm population within each response scenario; it is not the sum of category
 percentages.
 
-## What the shelter comparison says
+## Birds remaining unaffected by shelter category
 
 ![Average share of sheltered and unsheltered farms remaining unaffected at the end of matched scenarios, shown by production type and split into No culling and Culling panels. Both panels use the same percentage scale.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Faceted comparison of sheltered and unsheltered farm survival by production type with no culling and with culling"}
 
@@ -297,31 +271,24 @@ The cleanest future test would compare the same farms and the same starting
 conditions twice: once with shelter protection and once without it. That would
 separate the modelled shelter effect from differences in farm location.
 
-## Where the exposure sits
+## Where bird-loss exposure sits
 
-![Farm exposure across New Zealand without control and with the configured culling response. Both panels use the same farms, bubble sizes and colour scale. Larger bubbles have more production capacity. Colour shows how often each farm was counted as lost across the repeated scenarios.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="Side-by-side maps of fixed New Zealand farm exposure without control and with culling"}
+![Farm exposure across New Zealand without culling and with culling. Larger bubbles represent more birds. Colour shows how often all birds at each farm were counted as lost across the repeated scenarios.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm bird-loss exposure without culling and with culling"}
 
-The left map shows the no-control result and the right map shows the matched
+The left map shows the no-culling result and the right map shows the matched
 culling result. Both bring the two islands into one view. Each bubble is one
-farm at its fixed location, and larger bubbles have more production capacity.
+farm at its fixed location, and larger bubbles represent more birds.
 Because the colour scale is shared, the two panels can be compared directly.
 
-In the no-control panel, colour shows how often a farm reached the lost state
+In the no-culling panel, colour shows how often a farm reached the lost state
 through the normal modelled chain. In the culling panel, a farm is also counted
 as lost when it is culled. This is important: a coloured farm on the right may
 represent an early, deliberate loss that helped prevent many other farms from
 being reached.
 
-For example, a value of 40% means that the farm reached the lost state in 40
-out of every 100 simulated scenarios under the current settings and starting
-location method. It does not mean the farm is certain to lose 40% of its own
-production, and it is not a forecast that an event will occur. It is a
-scenario-based exposure measure: a high value identifies a farm that is often
-reached when many possible cascades are tested.
-
 For example, 40% means the farm was counted as lost in 40 out of every 100
-modelled scenarios for that panel. It does not mean that the farm loses 40% of
-its own production, and it is not a forecast that the event will occur. A high
+modelled scenarios for that panel. It means all birds at that farm were counted
+as lost in those runs; it is not a forecast that the event will occur. A high
 value simply marks a farm that is frequently exposed under the chosen settings
 and starting method.
 
@@ -367,22 +334,6 @@ fairly similar—`r round(north$sheltered_share, 1)`% in the North Island and
 the main explanation here. These figures will update automatically when the
 full farm population is loaded and the analysis is rerun.
 
-## What happens between the islands
-
-The farm data identify which island each farm belongs to. Farms on the same
-island have no extra barrier. For farms on different islands, the model applies
-the cross-island setting after allowing for distance and shelter.
-
-The current value is
-**`r config$model_parameters$cross_barrier_transmission_multiplier`**. A value
-of 0 blocks spread between islands. A value such as 0.05 leaves a small
-cross-island pathway, while 1 removes the extra island penalty but still allows
-distance to reduce spread. A value above 0 should only be used when there is a
-credible route, such as ferry movements, shared equipment or supplier links.
-
-The grey New Zealand shape and optional regional lines are there to make the
-map easier to read. They do not change the model.
-
 ## What to take from these results
 
 Under the current settings, the main message is that loss is widespread in
@@ -396,16 +347,31 @@ pathway. Animal movements, staff, vehicles, shared equipment, wind, cleaning
 practices and response actions may all change the real pattern. The model
 should support discussion, not replace operational judgement.
 
-## Running the analysis again
+# Appendix: Method and use
 
-Start with the complete farm table in `data/farms.csv`. If its column names
-change, update the mappings in `config.json`. Choose how starting farms are
-selected, review the timing, distance, shelter, island and run settings, then
-run `source("spatial_cascade_monte_carlo.R")`. The refreshed charts and tables
-will be written to `assets/`. Finish by running
-`quarto render spatial_cascade_report.qmd` to rebuild this report.
+## Why the scenarios are repeated
 
-# Appendix: How timing and distance shape spread
+One run gives only one possible chain of events. This analysis repeats the
+whole scenario **`r format(runs, big.mark = ",")` times** over the same fixed
+farm population. Starting farms and chance outcomes can differ between runs.
+Looking across all runs shows the usual result as well as less common severe
+outcomes.
+
+More runs make the pattern steadier; they do not make the assumptions more
+accurate. Results still depend on the farm data and the selected settings.
+
+## How the comparison is set up
+
+Each scenario begins with every farm unaffected and
+`r config$simulation_controls$initial_phase_c_entities` farms starting the
+event. The model follows the next `r days` days. A farm may be reached,
+incubate, become active and then have all its birds counted as lost.
+
+Every starting pattern is run twice. The no-culling and culling versions use
+the same farms and prepared random values. This pairing keeps the comparison
+focused on the management response rather than unrelated random differences.
+
+## Timing and distance
 
 ![The left panel follows one farm after it is reached and shows when it can spread, when it would normally move to lost production, and when a covered farm would be culled. The right panel shows how one transmission opportunity becomes less likely as the distance between two farms increases.](assets/spatial_cascade_timing_distance_concept.svg){#fig-timing-distance fig-alt="Two-panel concept figure showing farm state timing and spatial transmission decay"}
 
@@ -436,3 +402,28 @@ This curve describes one opportunity from one active source. When several
 active farms can reach the same farm on the same day, the model combines those
 opportunities, so the farm's overall chance of being reached can be higher than
 one line alone suggests.
+
+## Movement between islands
+
+The farm data identify which island each farm belongs to. Farms on the same
+island have no extra barrier. For farms on different islands, the model applies
+the cross-island setting after allowing for distance and shelter.
+
+The current value is
+**`r config$model_parameters$cross_barrier_transmission_multiplier`**. A value
+of 0 blocks spread between islands. A value such as 0.05 leaves a small
+cross-island pathway, while 1 removes the extra island penalty but still allows
+distance to reduce spread. A value above 0 should only be used when there is a
+credible route, such as ferry movements, shared equipment or supplier links.
+
+The grey New Zealand shape and optional regional lines help readers locate the
+farms. They do not change the calculation.
+
+## Running the analysis again
+
+Start with the complete farm table in `data/farms.csv`. If column names change,
+update the mappings in `config.json`. Review the starting-farm, timing,
+distance, shelter, island, culling and run settings, then run
+`source("spatial_cascade_monte_carlo.R")`. Refreshed figures and tables are
+written to `assets/`. Run `quarto render spatial_cascade_report.qmd` to rebuild
+this report.

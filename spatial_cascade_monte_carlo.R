@@ -443,10 +443,10 @@ make_loss_plot_rows <- function(loss_values, response_label) {
   rbind(
     data.frame(response = response_label,
                scenario_order = seq_along(ordered_loss),
-               outcome = "Production remaining", share = 1 - ordered_loss),
+             outcome = "Birds remaining", share = 1 - ordered_loss),
     data.frame(response = response_label,
                scenario_order = seq_along(ordered_loss),
-               outcome = "Production lost", share = ordered_loss))
+             outcome = "Birds lost", share = ordered_loss))
 }
 loss_plot_data <- make_loss_plot_rows(production_loss_log, "No culling")
 if (CULL_COMPARISON) {
@@ -456,23 +456,23 @@ if (CULL_COMPARISON) {
 loss_plot_data$response <- factor(loss_plot_data$response,
   levels = c("No culling", "Culling"))
 loss_plot_data$outcome <- factor(loss_plot_data$outcome,
-  levels = c("Production lost", "Production remaining"))
+  levels = c("Birds lost", "Birds remaining"))
 loss_plot <- ggplot(loss_plot_data,
                     aes(scenario_order, share, fill = outcome)) +
   geom_col(width = 1, colour = NA) +
-  scale_fill_manual(values = c("Production lost" = "#E76F51",
-                               "Production remaining" = "#D8E1E6"),
+  scale_fill_manual(values = c("Birds lost" = "#E76F51",
+                               "Birds remaining" = "#D8E1E6"),
                     name = NULL) +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, .25),
                      labels = function(x) paste0(round(100 * x), "%"),
                      expand = c(0, 0)) +
   scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
   facet_wrap(~response, ncol = if (CULL_COMPARISON) 2 else 1) +
-  labs(title = paste(SCENARIO_NAME, "production outcome across repeated scenarios"),
+  labs(title = paste(SCENARIO_NAME, "bird outcomes across repeated scenarios"),
        subtitle = paste(MONTE_CARLO_RUNS, "matched scenarios per response;",
          "each panel is ordered from lower to higher percentage loss"),
        x = "Complete scenarios (ordered by loss, not time)",
-       y = "Share of national production capacity") +
+       y = "Share of all birds") +
   report_theme + theme(legend.position = "top",
     strip.text = element_text(face = "bold", colour = "#173B57", size = 12),
     panel.spacing.x = grid::unit(1, "lines"))
@@ -491,9 +491,9 @@ type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = produ
   geom_boxplot(width = .62, outlier.alpha = .2) +
   facet_wrap(~response, nrow = 1) +
   scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +
-  labs(title = "Total loss by production type and response",
+  labs(title = "Birds lost by production type and response",
        subtitle = "Matched management scenarios; production type does not alter spread",
-       x = PRODUCTION_TYPE_LABEL, y = VALUE_AXIS_LABEL) + report_theme +
+       x = PRODUCTION_TYPE_LABEL, y = "Birds lost") + report_theme +
   theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
 survival_data <- as.data.frame(as.table(average_type_survival))
 names(survival_data) <- c("production_type", "protection_group", "survival")
@@ -520,15 +520,15 @@ survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = pro
 nz_boundaries <- read_geojson_polygons(BOUNDARY_FILE)
 boundary_line_colour <- if (SHOW_REGION_BOUNDARIES) "#87929A" else NA
 map_risk_data <- if (CULL_COMPARISON) {
-  rbind(transform(farm_risk, probability_culled_pct = 0,
-                  response = "No control"),
-        transform(cull_farm_risk, response = "Cull"))
+    rbind(transform(farm_risk, probability_culled_pct = 0,
+                  response = "No culling"),
+        transform(cull_farm_risk, response = "Culling"))
 } else {
   transform(farm_risk, probability_culled_pct = 0,
-            response = "No control")
+            response = "No culling")
 }
 map_risk_data$response <- factor(map_risk_data$response,
-                                 levels = c("No control", "Cull"))
+                                 levels = c("No culling", "Culling"))
 farm_risk_plot <- ggplot() +
   geom_polygon(data = nz_boundaries, aes(lon, lat, group = group),
     fill = "#E5E7E9", colour = boundary_line_colour, linewidth = .25) +
@@ -542,8 +542,8 @@ farm_risk_plot <- ggplot() +
                           config$spatial_bounds$maximum_latitude),
                  expand = FALSE) +
   scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
-  scale_size_area(max_size = 6, name = "Production") +
-  labs(title = "Farm exposure with and without culling",
+  scale_size_area(max_size = 6, name = "Birds") +
+  labs(title = "Farm bird-loss exposure with and without culling",
        subtitle = "Matched scenarios and one shared probability scale",
        x = NULL, y = NULL) +
   report_theme +
@@ -562,10 +562,10 @@ if (CULL_COMPARISON) {
     facet_wrap(~response, nrow = 1) +
     scale_fill_manual(values = c("No culling" = "#7B8790",
                                  "Culling" = "#167D8D")) +
-    labs(title = "Total production loss by response",
+    labs(title = "Birds lost by management response",
          subtitle = paste0(CULL_COVERAGE * 100, "% coverage, ",
            CULL_RESPONSE_DELAY, "-day response delay"),
-         x = NULL, y = VALUE_AXIS_LABEL) + report_theme +
+         x = NULL, y = "Birds lost") + report_theme +
     theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12),
           axis.text.x = element_blank(), axis.ticks.x = element_blank())
 }
