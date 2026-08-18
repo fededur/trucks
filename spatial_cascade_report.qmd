@@ -82,6 +82,27 @@ and with a culling response, making the practical value of the response easier
 to see. The simulation method and guidance on using the analysis are in the
 appendix.
 
+## The main findings point to early action
+
+::: {.callout-important title="Key findings"}
+
+- Without culling, bird losses are widespread across most modelled outbreaks.
+
+- Early culling reduces the expected national loss by about
+  **`r format(round(cull$mean_net_loss_avoided), big.mark = ",")` `r capacity_unit`**,
+  or **`r round(cull$net_loss_reduction_pct, 1)`%**, under the current settings.
+
+- The final loss varies between outbreaks, even though the same farms and
+  model settings are used each time.
+
+- The production-type results show where the national loss falls, while the
+  map identifies farms and areas that are repeatedly exposed.
+
+- These results support planning and comparison. They are not a forecast of a
+  future outbreak.
+
+:::
+
 ```{r}
 #| label: production-reference-table
 #| include: false
@@ -402,20 +423,6 @@ fairly similar—`r round(north$sheltered_share, 1)`% in the North Island and
 `r round(south$sheltered_share, 1)`% in the South Island—so shelter mix is not
 the main explanation here. These figures will update automatically when the
 full farm population is loaded and the analysis is rerun.
-
-## Early action changes the national outcome
-
-Under the current settings, the main message is that loss is widespread in
-most modelled outbreaks. The range across runs matters because it shows that the final
-loss is not fixed, even when the farm population stays the same. The map then
-adds the local view by showing which farms are repeatedly exposed.
-
-The most useful result for communication is the expected total loss across the
-whole population. The production-type results explain who carries that loss,
-and the map shows where exposure repeatedly appears. Together they suggest
-that early culling can sharply reduce national loss under the selected
-conditions, while still leaving meaningful uncertainty between possible
-events. This is planning evidence rather than a forecast.
 
 # Appendix: Method and use
 
