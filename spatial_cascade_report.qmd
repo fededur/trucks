@@ -27,6 +27,19 @@ execute:
   font-weight: 600;
   background: #f5f7f8;
 }
+.key-findings {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem 1.2rem 0.35rem;
+  background: #fff7d6;
+  border: 1px solid #eadb9a;
+  border-left: 5px solid #d8bd55;
+  border-radius: 0.35rem;
+}
+.key-findings-title {
+  margin-bottom: 0.65rem;
+  color: #5f5223;
+  font-weight: 700;
+}
 </style>
 ```
 
@@ -84,7 +97,9 @@ appendix.
 
 ## The main findings point to early action
 
-::: {.callout-important title="Key findings"}
+::: {.key-findings}
+
+<div class="key-findings-title">Key findings</div>
 
 - Without culling, bird losses are widespread across most modelled outbreaks.
 
