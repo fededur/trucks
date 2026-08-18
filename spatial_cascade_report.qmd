@@ -12,6 +12,18 @@ execute:
   message: false
 ---
 
+```{=html}
+<style>
+.table-note {
+  margin-top: -0.55rem;
+  margin-bottom: 1.25rem;
+  color: #7a8791;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+</style>
+```
+
 ```{r}
 #| label: setup
 config <- jsonlite::fromJSON("config.json")
@@ -114,10 +126,11 @@ be lost across the **whole farm population**, not at an average farm.
 For each farm, the model combines its bird count with how often that farm is
 lost across the repeated scenarios. Adding those farm results gives the
 expected total for the population. This is the same as averaging the complete
-national totals across all runs.
+national totals across all runs. The results are summarised in
+@tbl-expected-population-loss.
 
 ```{r}
-#| label: population-loss-table
+#| label: tbl-expected-population-loss
 #| tbl-cap: "Expected total bird losses across the whole farm population"
 make_population_rows <- function(scenario, risk_data, loss_log) {
   rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
@@ -169,14 +182,14 @@ population_estimates$`Share p25` <- population_estimates$`Share p75` <- NULL
 knitr::kable(population_estimates, row.names = FALSE)
 ```
 
-The **Total** rows are the national population estimates. Production-type rows
-add to each Total. These figures do not mean that part of a farm's birds are
-lost in one run: a lost farm contributes all its birds in that run. They are
-planning estimates under the selected assumptions, not forecasts.
-
-The percentage outside brackets is the expected share lost. The bracketed
-25th–75th percentile range is the middle half of complete scenario outcomes.
-It shows run-to-run variation while keeping all model assumptions fixed.
+```{=html}
+<div class="table-note" role="note"><strong>How to read this table:</strong>
+The Total rows are the national population estimates, and production-type rows
+add to each Total. The percentage outside brackets is the expected share lost;
+the bracketed 25th–75th percentile range is the middle half of complete
+scenario outcomes with assumptions held fixed. A lost farm contributes all its
+birds in that run. These are planning estimates, not forecasts.</div>
+```
 
 ## National bird losses
 
