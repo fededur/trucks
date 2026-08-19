@@ -158,9 +158,17 @@ type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
                            dimnames = list(NULL, types, groups))
 cull_type_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
                                 dimnames = list(NULL, types, groups))
+type_bird_survival_log <- array(NA_real_, c(MONTE_CARLO_RUNS, length(types), 2L),
+  dimnames = list(NULL, types, groups))
+cull_type_bird_survival_log <- array(NA_real_,
+  c(MONTE_CARLO_RUNS, length(types), 2L), dimnames = list(NULL, types, groups))
 group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L, dimnames = list(NULL, groups))
 cull_group_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L,
                                   dimnames = list(NULL, groups))
+group_bird_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L,
+                                  dimnames = list(NULL, groups))
+cull_group_bird_survival_log <- matrix(NA_real_, MONTE_CARLO_RUNS, 2L,
+                                       dimnames = list(NULL, groups))
 farm_start_count <- farm_affected_count <- farm_lost_count <- integer(POPULATION_SIZE)
 cull_farm_affected_count <- cull_farm_lost_count <-
   cull_farm_culled_count <- integer(POPULATION_SIZE)
@@ -264,12 +272,20 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
     for (group in groups) {
       sheltered <- identical(group, SHELTERED_LABEL)
       rows <- type_rows & farms$is_sheltered == sheltered
-      if (sum(rows)) type_survival_log[sim, type, group] <- 100 * sum(rows & state == "A") / sum(rows)
+      if (sum(rows)) {
+        type_survival_log[sim, type, group] <- 100 * sum(rows & state == "A") / sum(rows)
+        type_bird_survival_log[sim, type, group] <- 100 *
+          sum(farms$production_yield[rows & state == "A"]) /
+          sum(farms$production_yield[rows])
+      }
     }
   }
   for (group in groups) {
     rows <- farms$is_sheltered == identical(group, SHELTERED_LABEL)
     group_survival_log[sim, group] <- 100 * sum(rows & state == "A") / sum(rows)
+    group_bird_survival_log[sim, group] <- 100 *
+      sum(farms$production_yield[rows & state == "A"]) /
+      sum(farms$production_yield[rows])
   }
 
   if (CULL_COMPARISON) {
@@ -295,6 +311,9 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
         if (sum(rows)) {
           cull_type_survival_log[sim, type, group] <-
             100 * sum(rows & controlled$state == "A") / sum(rows)
+          cull_type_bird_survival_log[sim, type, group] <- 100 *
+            sum(farms$production_yield[rows & controlled$state == "A"]) /
+            sum(farms$production_yield[rows])
         }
       }
     }
@@ -302,6 +321,9 @@ for (sim in seq_len(MONTE_CARLO_RUNS)) {
       rows <- farms$is_sheltered == identical(group, SHELTERED_LABEL)
       cull_group_survival_log[sim, group] <-
         100 * sum(rows & controlled$state == "A") / sum(rows)
+      cull_group_bird_survival_log[sim, group] <- 100 *
+        sum(farms$production_yield[rows & controlled$state == "A"]) /
+        sum(farms$production_yield[rows])
     }
   }
 }
@@ -311,6 +333,12 @@ average_survival <- colMeans(group_survival_log, na.rm = TRUE)
 cull_average_type_survival <- apply(cull_type_survival_log, c(2, 3), mean,
                                     na.rm = TRUE)
 cull_average_survival <- colMeans(cull_group_survival_log, na.rm = TRUE)
+average_type_bird_survival <- apply(type_bird_survival_log, c(2, 3), mean,
+                                    na.rm = TRUE)
+average_bird_survival <- colMeans(group_bird_survival_log, na.rm = TRUE)
+cull_average_type_bird_survival <- apply(cull_type_bird_survival_log, c(2, 3),
+                                         mean, na.rm = TRUE)
+cull_average_bird_survival <- colMeans(cull_group_bird_survival_log, na.rm = TRUE)
 assets_dir <- "assets"; if (!dir.exists(assets_dir)) dir.create(assets_dir, recursive = TRUE)
 
 farm_risk <- transform(farms,
@@ -345,7 +373,9 @@ type_summary <- do.call(rbind, lapply(types, function(type) {
     total_loss_p75 = unname(quantile(losses, .75)), total_loss_p05 = unname(quantile(losses, .05)),
     total_loss_p95 = unname(quantile(losses, .95)),
     sheltered_survival_pct = average_type_survival[type, SHELTERED_LABEL],
-    unsheltered_survival_pct = average_type_survival[type, UNSHELTERED_LABEL])
+    unsheltered_survival_pct = average_type_survival[type, UNSHELTERED_LABEL],
+    sheltered_bird_survival_pct = average_type_bird_survival[type, SHELTERED_LABEL],
+    unsheltered_bird_survival_pct = average_type_bird_survival[type, UNSHELTERED_LABEL])
 }))
 write.csv(type_summary, file.path(assets_dir, "spatial_cascade_production_type_summary.csv"), row.names = FALSE)
 
@@ -357,6 +387,10 @@ summary_table <- data.frame(scenario = SCENARIO_NAME, monte_carlo_runs = MONTE_C
   sheltered_survival_pct = average_survival[SHELTERED_LABEL],
   unsheltered_survival_pct = average_survival[UNSHELTERED_LABEL],
   protection_benefit_percentage_points = average_survival[SHELTERED_LABEL] - average_survival[UNSHELTERED_LABEL])
+summary_table$sheltered_bird_survival_pct <- average_bird_survival[SHELTERED_LABEL]
+summary_table$unsheltered_bird_survival_pct <- average_bird_survival[UNSHELTERED_LABEL]
+summary_table$bird_protection_benefit_percentage_points <-
+  average_bird_survival[SHELTERED_LABEL] - average_bird_survival[UNSHELTERED_LABEL]
 write.csv(summary_table, file.path(assets_dir, "spatial_cascade_summary.csv"), row.names = FALSE)
 
 cull_comparison_summary <- NULL
@@ -386,7 +420,11 @@ if (CULL_COMPARISON) {
         sum(farms$production_type == type),
       mean_total_production_loss = mean(cull_type_loss_log[, type]),
       total_loss_p25 = unname(quantile(cull_type_loss_log[, type], .25)),
-      total_loss_p75 = unname(quantile(cull_type_loss_log[, type], .75)))
+      total_loss_p75 = unname(quantile(cull_type_loss_log[, type], .75)),
+      sheltered_bird_survival_pct =
+        cull_average_type_bird_survival[type, SHELTERED_LABEL],
+      unsheltered_bird_survival_pct =
+        cull_average_type_bird_survival[type, UNSHELTERED_LABEL])
   }))
   write.csv(cull_type_summary,
             file.path(assets_dir, "spatial_cascade_cull_production_type_summary.csv"),
@@ -418,7 +456,9 @@ results <- list(scenario = SCENARIO_NAME, configuration = config, farms = farms,
   starting_location_mode = START_MODE, monte_carlo_runs = MONTE_CARLO_RUNS,
   production_loss_log = production_loss_log, production_loss_by_type_log = type_loss_log,
   lost_count_by_type_log = type_lost_count_log, survival_by_type_and_shelter_log = type_survival_log,
-  average_survival = average_survival, farm_risk_summary = farm_risk,
+  bird_survival_by_type_and_shelter_log = type_bird_survival_log,
+  average_survival = average_survival, average_bird_survival = average_bird_survival,
+  farm_risk_summary = farm_risk,
   cull_farm_risk_summary = cull_farm_risk,
   cull_comparison_summary = cull_comparison_summary,
   cull_total_loss_log = if (CULL_COMPARISON) cull_total_loss_log else NULL,
@@ -426,6 +466,10 @@ results <- list(scenario = SCENARIO_NAME, configuration = config, farms = farms,
   cull_lost_count_by_type_log = if (CULL_COMPARISON) cull_type_lost_count_log else NULL,
   cull_survival_by_type_and_shelter_log = if (CULL_COMPARISON) cull_type_survival_log else NULL,
   cull_average_survival = if (CULL_COMPARISON) cull_average_survival else NULL,
+  cull_bird_survival_by_type_and_shelter_log =
+    if (CULL_COMPARISON) cull_type_bird_survival_log else NULL,
+  cull_average_bird_survival =
+    if (CULL_COMPARISON) cull_average_bird_survival else NULL,
   direct_cull_loss_log = if (CULL_COMPARISON) cull_direct_loss_log else NULL,
   net_loss_avoided_log = if (CULL_COMPARISON) net_loss_avoided_log else NULL)
 saveRDS(results, file.path(assets_dir, "spatial_cascade_results.rds"))
@@ -491,12 +535,20 @@ type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = produ
        subtitle = "Matched management scenarios; production type does not alter spread",
        x = PRODUCTION_TYPE_LABEL, y = "Birds lost") + report_theme +
   theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
-survival_data <- as.data.frame(as.table(average_type_survival))
+survival_data <- as.data.frame(as.table(average_type_bird_survival))
 names(survival_data) <- c("production_type", "protection_group", "survival")
+survival_data <- rbind(survival_data,
+  data.frame(production_type = "Total",
+             protection_group = names(average_bird_survival),
+             survival = as.numeric(average_bird_survival)))
 survival_data$response <- "No culling"
 if (CULL_COMPARISON) {
-  cull_survival_data <- as.data.frame(as.table(cull_average_type_survival))
+  cull_survival_data <- as.data.frame(as.table(cull_average_type_bird_survival))
   names(cull_survival_data) <- c("production_type", "protection_group", "survival")
+  cull_survival_data <- rbind(cull_survival_data,
+    data.frame(production_type = "Total",
+               protection_group = names(cull_average_bird_survival),
+               survival = as.numeric(cull_average_bird_survival)))
   cull_survival_data$response <- "Culling"
   survival_data <- rbind(survival_data, cull_survival_data)
 }
@@ -508,9 +560,9 @@ survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = pro
   scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Protection") +
   scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04)),
                      labels = function(x) paste0(round(x), "%")) +
-  labs(title = paste("Average final", PHASE_A_LABEL, "rate by response"),
-       subtitle = "Matched management scenarios, split by production type and shelter",
-       x = PRODUCTION_TYPE_LABEL, y = SURVIVAL_AXIS_LABEL) + report_theme +
+  labs(title = "Share of birds remaining unaffected",
+       subtitle = "Bird-weighted results by production type and protection level",
+       x = PRODUCTION_TYPE_LABEL, y = "Birds remaining unaffected (%)") + report_theme +
   theme(legend.position = "top",
         strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
 nz_boundaries <- read_geojson_polygons(BOUNDARY_FILE)

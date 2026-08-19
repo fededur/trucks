@@ -63,7 +63,7 @@ farm_risk <- results$farm_risk_summary
 cull_farm_risk <- results$cull_farm_risk_summary
 cull_national_loss_pct <- 100 * cull$mean_cull_total_loss /
   sum(farms$production_yield)
-cull_average_survival <- results$cull_average_survival
+cull_average_bird_survival <- results$cull_average_bird_survival
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
 initial_starts <- config$simulation_controls$initial_phase_c_entities
@@ -323,31 +323,34 @@ can carry a larger absolute loss. Production type is used here to describe
 where losses fall; it does not change how spread occurs in the model. Table 1
 provides the detailed production-type percentages and ranges.
 
-## Protection contributes to keeping farms unaffected
+## Protection contributes to keeping birds unaffected
 
-![Protection contributes to farm survival across both production types.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of protected and unprotected farms remaining unaffected by production type, with no culling and with culling"}
+![Bird-weighted survival differs by production type and protection level.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at protected and unprotected farms remaining unaffected by production type and national total, with no culling and with culling"}
 
-The figure compares the share of farms that remain unaffected for each
-production type and protection level. Without culling, the share remaining
-unaffected averaged
-**`r round(summary$sheltered_survival_pct, 1)`%**, compared with
-**`r round(summary$unsheltered_survival_pct, 1)`%** for farms without protection.
+The figure compares the share of birds that remain unaffected for each
+production type, the national total and each protection level. Every farm is weighted by its bird count,
+so a larger farm contributes more to the result than a smaller farm. Without
+culling, the share of birds remaining unaffected averaged
+**`r round(summary$sheltered_bird_survival_pct, 1)`%** at protected farms,
+compared with
+**`r round(summary$unsheltered_bird_survival_pct, 1)`%** at farms without protection.
 The difference was
-**`r round(summary$protection_benefit_percentage_points, 1)` percentage
+**`r round(summary$bird_protection_benefit_percentage_points, 1)` percentage
 points**. With culling, the corresponding averages were
-**`r round(cull_average_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
-and **`r round(cull_average_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**.
+**`r round(cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
+and **`r round(cull_average_bird_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**.
 
 Protection reduces the chance that an outbreak reaches a protected farm. It
-therefore contributes to keeping farms, and the birds held at those farms,
-unaffected. It does not guarantee survival: the final result also depends on
-where an outbreak starts and which farms it reaches first. This is why the
-size of the protection benefit can differ between production types.
+therefore contributes to keeping birds unaffected, but it does not guarantee
+survival. The final pattern also reflects where protected farms are located,
+their bird numbers, where an outbreak starts and which farms it reaches first.
+This is why the apparent protection benefit can differ between production
+types.
 
-The bars describe the final outcomes for the farms in each group; they do not
-measure protection on its own. The practical message is that protection adds a
-layer of defence, while culling can further limit the wider outbreak. They are
-complementary measures rather than alternatives.
+The bars describe the final bird outcomes for the farms currently in each
+group; they do not measure the effect of protection on its own. A paired test
+that changes only protection, while holding the same farms and outbreaks
+fixed, would be needed to isolate that effect.
 
 ## Some farming areas are exposed more often than others
 

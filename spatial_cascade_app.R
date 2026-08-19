@@ -334,7 +334,9 @@ ui <- fluidPage(
           div(class = "panel-card", plotOutput("total_loss_timeline", height = "285px")),
           div(class = "panel-card", plotOutput("type_loss_timeline", height = "285px")),
           div(class = "panel-card wide-result",
-              plotOutput("farm_count_timeline", height = "260px"))
+              plotOutput("farm_count_timeline", height = "260px")),
+          div(class = "panel-card wide-result",
+              plotOutput("bird_survival_by_group", height = "300px"))
         )
       )
     ),
@@ -373,7 +375,8 @@ ui <- fluidPage(
           p("Red farms are initially affected at the start of the scenario. Yellow farms become affected as the event spreads. Grey farms are not affected by the displayed day. Lines show the modelled link from one farm to the next. Larger dots have more production capacity."),
           h4("Reading the figures"),
           p("The cards show farms reached, farms lost, farms culled, total national capacity lost, and losses by production type. Loss includes farms that naturally reach the lost state and farms removed through culling."),
-          p("The Scenario results tab shows how these losses and farm counts build over time. Capacity reference lines show the national total and each production type's available total. The vertical dashed line follows the day selected on the map. Play is helpful for presentations, but it is not required to use the figures.")),
+          p("The Scenario results tab shows how these losses and farm counts build over time. Capacity reference lines show the national total and each production type's available total. The bird-survival chart is weighted by bird numbers: it shows the share of all birds in each production and protection group that remain unaffected, not the share of farms."),
+          p("The vertical dashed line follows the day selected on the map. Play is helpful for presentations, but it is not required to use the figures.")),
         div(class = "about-card",
           h3("Important limits"),
           p("The result depends on the data and settings supplied. Straight-line distance does not describe every real pathway, such as animal movements, shared workers, vehicles or equipment. Use the app to compare scenarios and support discussion, not as a stand-alone operational decision."))
@@ -569,6 +572,54 @@ server <- function(input, output, session) {
       labs(title = "Farm counts over time",
            subtitle = "Affected, lost and culled farms are shown separately",
            x = "Scenario day", y = "Number of farms") +
+      results_theme
+  })
+
+  output$bird_survival_by_group <- renderPlot({
+    result <- day_view()
+    production_types <- c(sort(unique(result$production_type)), "Total")
+    protection_levels <- c(TRUE, FALSE)
+    survival <- do.call(rbind, lapply(production_types, function(type) {
+      do.call(rbind, lapply(protection_levels, function(is_protected) {
+        type_rows <- if (identical(type, "Total")) {
+          rep(TRUE, nrow(result))
+        } else {
+          result$production_type == type
+        }
+        rows <- type_rows & result$is_sheltered == is_protected
+        total_birds <- sum(result$production_yield[rows])
+        unaffected_birds <- sum(result$production_yield[
+          rows & result$display_group == "Not affected"])
+        data.frame(
+          production_type = type,
+          protection = if (is_protected) SHELTERED_LABEL else UNSHELTERED_LABEL,
+          survival_pct = if (total_birds > 0) {
+            100 * unaffected_birds / total_birds
+          } else {
+            NA_real_
+          })
+      }))
+    }))
+    survival <- survival[!is.na(survival$survival_pct), , drop = FALSE]
+    survival$protection <- factor(survival$protection,
+      levels = c(SHELTERED_LABEL, UNSHELTERED_LABEL))
+    day <- min(input$display_day, input$duration)
+
+    ggplot(survival,
+           aes(production_type, survival_pct, fill = protection)) +
+      geom_col(position = position_dodge(.72), width = .66) +
+      geom_text(aes(label = sprintf("%.1f%%", survival_pct)),
+                position = position_dodge(.72), vjust = -.35, size = 3.5) +
+      scale_fill_manual(values = setNames(c("#3B9AB2", "#F28E2B"),
+                                          c(SHELTERED_LABEL, UNSHELTERED_LABEL)),
+                        name = "Protection") +
+      scale_y_continuous(limits = c(0, 100),
+                         labels = function(x) paste0(round(x), "%"),
+                         expand = expansion(c(0, .06))) +
+      labs(title = "Share of birds remaining unaffected",
+           subtitle = paste("Bird-weighted result on day", day),
+           x = PRODUCTION_TYPE_LABEL,
+           y = "Birds remaining unaffected (%)") +
       results_theme
   })
 
