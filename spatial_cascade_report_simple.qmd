@@ -278,10 +278,11 @@ remaining risk is not confined to either eggs or meat. The number of birds lost
 can nevertheless differ because the two production types do not hold the same
 number of birds.
 
-The result also varies between outbreaks. Across the middle half of outcomes,
-the national share lost ranges from **`r round(cull_national_loss_p25, 1)`% to
-`r round(cull_national_loss_p75, 1)`%**. Preparedness therefore needs to account
-for outcomes above and below the central estimate.
+The share of birds lost changes depending on where an outbreak starts and
+which farms it reaches. In half of the modelled outbreaks, the national loss
+was between **`r round(cull_national_loss_p25, 1)`% and
+`r round(cull_national_loss_p75, 1)`% of birds**. This wide difference means
+preparedness cannot rely on the expected loss alone.
 
 ## Shelter is not associated with the same outcome for eggs and meat
 
@@ -387,10 +388,10 @@ using only the birds in that group. Bars are ordered from lower to higher loss
 within each panel; this is not a timeline.</div>
 ```
 
-Outcomes vary even though the farm population and settings remain fixed. In the
-main response scenario, the middle half of outbreaks lose between
-**`r round(cull_national_loss_p25, 1)`% and
-`r round(cull_national_loss_p75, 1)`%** of birds. The larger green area in the
+The share lost changes because outbreaks can start at different farms and
+follow different paths. In the main response scenario, half of the outbreaks
+lose between **`r round(cull_national_loss_p25, 1)`% and
+`r round(cull_national_loss_p75, 1)`% of birds**. The larger green area in the
 first panel shows that the response leaves more birds unaffected across most
 of the repeated outbreaks.
 
