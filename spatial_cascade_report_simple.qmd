@@ -64,6 +64,11 @@ farm_risk <- results$farm_risk_summary
 cull_farm_risk <- results$cull_farm_risk_summary
 cull_national_loss_pct <- 100 * cull$mean_cull_total_loss /
   sum(farms$production_yield)
+cull_national_loss_runs <- 100 *
+  rowSums(results$cull_production_loss_by_type_log) /
+  sum(farms$production_yield)
+cull_national_loss_p25 <- unname(quantile(cull_national_loss_runs, 0.25))
+cull_national_loss_p75 <- unname(quantile(cull_national_loss_runs, 0.75))
 cull_average_bird_survival <- results$cull_average_bird_survival
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
@@ -102,37 +107,29 @@ cull_type_loss_comparison <- paste(
   collapse = "; ")
 ```
 
-## How this report is framed
-
-The culling response is the main planning case because an affected farm would
-realistically trigger a response. No culling is included only as a benchmark
-to show how much the response changes the outcome. Details of the simulation
-and comparison are in the appendix.
-
-# Results
-
 ::: {.key-findings}
 
 <div class="key-findings-title">Key findings</div>
 
-- With culling, the expected national share of birds lost is
-  **`r round(cull_national_loss_pct, 1)`%**. This remaining loss is the main
-  planning result.
+- The report assumes that affected farms receive an early culling response.
+  Under this main planning scenario, the expected national share of birds lost
+  is **`r round(cull_national_loss_pct, 1)`%**, compared with
+  **`r round(mean_loss_share, 1)`%** in the no-response benchmark.
 
-- The no-culling benchmark reaches **`r round(mean_loss_share, 1)`%** bird loss,
-  showing how much the response changes the outcome.
-
-- With culling, the expected share of birds lost by production type is
+- The remaining loss is similar across production types:
   **`r cull_type_loss_comparison`**.
 
 - The average chance of a farm being lost is
   `r round(cull_north_probability, 1)`% in the North Island and
   `r round(cull_south_probability, 1)`% in the South Island.
-  The North Island remains more exposed because more farms are located there, making a random
-  start there more likely, while spread between islands is blocked.
+  The North Island remains more exposed because more farms are located there,
+  making a random start there more likely, while spread between islands is
+  blocked.
 
-- No two outbreaks unfold in exactly the same way. Response planning should
-  therefore allow for a range of possible losses, not rely on one estimate.
+- The middle half of modelled outbreaks lose between
+  **`r round(cull_national_loss_p25, 1)`% and
+  `r round(cull_national_loss_p75, 1)`%** of birds, showing that the national
+  outcome can still vary substantially.
 
 - These findings can help compare response choices and focus preparedness.
   They should not be read as a forecast of a future outbreak.
@@ -175,16 +172,16 @@ capacity_reference$`Median per farm` <- thousand_birds(
   capacity_reference$`Median per farm`)
 ```
 
-## Culling limits the national loss, but around one in five birds remains at risk
+## Around one in five birds remains at risk nationally
 
-With culling, the expected national share of birds lost is
-**`r round(cull_national_loss_pct, 1)`%**. @tbl-expected-population-loss shows
-that remaining national loss and how it is distributed across eggs and meat.
-The no-culling result provides the benchmark.
+The main planning scenario leaves an expected national loss of
+**`r round(cull_national_loss_pct, 1)`% of birds**.
+@tbl-expected-population-loss places this result in context by showing the
+national total, the losses across eggs and meat, and the no-response benchmark.
 
 ```{r}
 #| label: tbl-expected-population-loss
-#| tbl-cap: "Culling limits the national loss, while losses remain across eggs and meat"
+#| tbl-cap: "Around one in five birds remains at risk nationally, with similar losses across eggs and meat"
 #| results: asis
 make_population_rows <- function(scenario, risk_data, loss_log) {
   rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
@@ -271,63 +268,63 @@ range across complete modelled outbreaks with the assumptions held fixed. When
 a farm is lost, all birds at that farm are counted as lost in that outbreak.</div>
 ```
 
-The culling total includes **`r thousand_birds(cull$mean_direct_cull_loss)`
-thousand birds** removed at identified farms. Even with those birds counted as
-lost, culling produces the lower total loss in
+Birds removed at identified farms are included in the national loss. Even after
+counting these birds, the response produces a lower total loss in
 **`r round(cull$runs_with_lower_total_loss_pct, 1)`%** of outbreaks. The number
 of affected farms falls from **`r round(cull$mean_baseline_farms_affected, 1)`**
-in the benchmark to **`r round(cull$mean_cull_farms_affected, 1)`** with the
-response, including **`r round(cull$mean_farms_culled, 1)`** farms culled.
+in the benchmark to **`r round(cull$mean_cull_farms_affected, 1)`** in the main
+scenario.
 
-## Bird losses remain across both eggs and meat after culling
+The production-type results are close—**`r cull_type_loss_comparison`**—so the
+remaining risk is not confined to either eggs or meat. The number of birds lost
+can nevertheless differ because the two production types do not hold the same
+number of birds.
 
-![After culling, bird losses remain across `r paste(tolower(production_types), collapse = " and ")`.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Birds lost by production type with culling first and no culling as a benchmark"}
+The result also varies between outbreaks. Across the middle half of outcomes,
+the national share lost ranges from **`r round(cull_national_loss_p25, 1)`% to
+`r round(cull_national_loss_p75, 1)`%**. Preparedness therefore needs to account
+for outcomes above and below the central estimate.
 
-```{=html}
-<div class="figure-note" role="note">Culling is shown first; no culling is the benchmark. Each box shows the spread of total population-level bird losses across the repeated outbreaks for that production type.</div>
-```
+## Shelter is not associated with the same outcome for eggs and meat
 
-With culling, the expected shares of birds lost are
-**`r cull_type_loss_comparison`**. Neither production type avoids the remaining
-risk. Similar percentages can still represent different numbers of birds when
-the production-type populations differ.
-
-## Shelter does not produce the same pattern for eggs and meat
-
-![After culling, shelter patterns differ across production types.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at sheltered and unsheltered farms remaining unaffected by production type, with culling first and no culling as a benchmark"}
+![The share of birds remaining unaffected differs by shelter status and production type.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at sheltered and unsheltered farms remaining unaffected by production type, with the main response scenario first and no response as a benchmark"}
 
 ```{=html}
 <div class="figure-note" role="note">
-Higher bars mean that a larger share of birds remains unaffected. Culling is
-shown first; no culling is the benchmark. Birds at culled farms are counted as
-lost. The bars are weighted by bird numbers, not by the number of farms.</div>
+Higher bars mean that a larger share of birds remains unaffected. The main
+response scenario is shown first and the no-response benchmark second. Birds
+at culled farms are counted as lost. Results are weighted by bird numbers, not
+by the number of farms.</div>
 ```
 
-With culling, **`r round(cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
+@fig-shelter-comparison shows that the relationship between shelter and birds
+remaining unaffected is not consistent across eggs and meat. Nationally,
+**`r round(cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
 of birds at sheltered farms and
 **`r round(cull_average_bird_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**
-of birds at unsheltered farms remain unaffected nationally.
+of birds at unsheltered farms remain unaffected.
 
 The shelter pattern differs between eggs and meat. This indicates that shelter
 status alone does not explain the result: farm location and the number of birds
 held at those farms also shape the observed pattern.
 
-## Remaining farm exposure is concentrated in the North Island
+## Farm exposure remains concentrated in the North Island
 
-![After culling, farm exposure remains concentrated in the North Island.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm exposure with culling first and no culling as a benchmark"}
+![Farm exposure remains concentrated in the North Island.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm exposure with the main response scenario first and no response as a benchmark"}
 
 ```{=html}
 <div class="figure-note" role="note">
-The culling map is shown first; no culling is the benchmark. Each bubble is one
-farm, larger bubbles hold more birds, and darker colours mean the farm is lost
-in a larger share of outbreaks. A culled farm is counted as lost.</div>
+The main response scenario is shown first and the no-response benchmark second.
+Each bubble is one farm, larger bubbles hold more birds, and darker colours
+mean the farm is lost in a larger share of outbreaks. A culled farm is counted
+as lost.</div>
 ```
 
-@fig-farm-risk shows that exposure remains uneven after culling. The strongest
-concentration is in the North Island, although the response substantially
-reduces exposure compared with the benchmark.
+@fig-farm-risk shows that exposure remains uneven. The strongest concentration
+is in the North Island, although exposure is substantially lower than in the
+benchmark.
 
-With culling, the national average chance of a farm being lost is
+The national average chance of a farm being lost is
 **`r round(mean(cull_farm_risk$probability_lost_pct), 1)`%**.
 
 Farms are directly culled in
@@ -336,7 +333,7 @@ average.
 
 ### North Island farms carry more of the remaining exposure
 
-With culling, the average chance of a farm being lost is
+The average chance of a farm being lost is
 **`r round(cull_north_probability, 1)`% in the North Island** and
 **`r round(cull_south_probability, 1)`% in the South Island**. The difference
 is associated mainly with the larger concentration of farms and starting
