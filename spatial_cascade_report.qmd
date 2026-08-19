@@ -48,7 +48,6 @@ execute:
 config <- jsonlite::fromJSON("config.json")
 results <- readRDS("assets/spatial_cascade_results.rds")
 summary <- read.csv("assets/spatial_cascade_summary.csv")
-types <- read.csv("assets/spatial_cascade_production_type_summary.csv")
 farms <- results$farms
 runs <- results$monte_carlo_runs
 days <- config$model_parameters$simulation_days
@@ -88,15 +87,17 @@ cull_north_probability <- mean(cull_farm_risk$probability_lost_pct[
   cull_farm_risk$barrier_group == north_name])
 cull_south_probability <- mean(cull_farm_risk$probability_lost_pct[
   cull_farm_risk$barrier_group == south_name])
-types$expected_loss_pct <- vapply(types$production_type, function(type) {
+production_types <- sort(unique(farms$production_type))
+cull_type_loss_pct <- vapply(production_types, function(type) {
   type_birds <- sum(farms$production_yield[farms$production_type == type])
-  100 * types$mean_total_production_loss[types$production_type == type] /
-    type_birds
+  expected_loss <- sum(cull_farm_risk$expected_loss_contribution[
+    cull_farm_risk$production_type == type])
+  100 * expected_loss / type_birds
 }, numeric(1))
-type_loss_order <- order(types$expected_loss_pct, decreasing = TRUE)
-type_loss_comparison <- paste(
-  paste0(types$production_type[type_loss_order], ": ",
-         round(types$expected_loss_pct[type_loss_order], 1), "%"),
+cull_type_loss_order <- order(cull_type_loss_pct, decreasing = TRUE)
+cull_type_loss_comparison <- paste(
+  paste0(production_types[cull_type_loss_order], ": ",
+         round(cull_type_loss_pct[cull_type_loss_order], 1), "%"),
   collapse = "; ")
 ```
 
@@ -129,8 +130,8 @@ appendix.
 - No two outbreaks unfold in exactly the same way. Response planning should
   therefore allow for a range of possible losses, not rely on one estimate.
 
-- Without culling, the expected share of birds lost by production type is
-  **`r type_loss_comparison`**.
+- With culling, the expected share of birds lost by production type falls to
+  **`r cull_type_loss_comparison`**.
 
 - Without culling, the average chance of a farm being lost is
   **`r round(north$mean_lost_probability, 1)`% in the North Island** and
