@@ -185,23 +185,18 @@ capacity_reference$`Median per farm` <- thousand_birds(
   capacity_reference$`Median per farm`)
 ```
 
-## An outbreak could lead to substantial bird losses nationally
+## Culling reduces bird losses nationally and across production types
 
-The clearest headline is the expected loss across the **whole farm
-population**, rather than the loss at an average farm. Without culling, the
-model estimates a loss of about
-**`r thousand_birds(cull$mean_baseline_total_loss)` thousand birds**.
-With culling, that falls to about
-**`r thousand_birds(cull$mean_cull_total_loss)` thousand birds**.
-That is an expected reduction of
-**`r thousand_birds(cull$mean_net_loss_avoided)` thousand birds**,
-or **`r round(cull$net_loss_reduction_pct, 1)`%**. @tbl-expected-population-loss
-shows how this national result is shared across production types and how much
-the modelled outbreaks varied.
+@tbl-expected-population-loss compares bird losses under two management
+responses. **No culling is the reference** and **culling is the response
+scenario**. With culling, the national share of birds lost falls from
+**`r round(mean_loss_share, 1)`% to `r round(cull_national_loss_pct, 1)`%**.
+The share also falls for both Eggs and Meat. The Total row shows the national
+result, while the production-type rows show where those losses occur.
 
 ```{r}
 #| label: tbl-expected-population-loss
-#| tbl-cap: "Expected total bird losses across the whole farm population"
+#| tbl-cap: "Bird losses under no culling and culling"
 #| results: asis
 make_population_rows <- function(scenario, risk_data, loss_log) {
   rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
@@ -255,7 +250,9 @@ population_estimates$`Share p25` <- population_estimates$`Share p75` <- NULL
 names(population_estimates)[names(population_estimates) == "Birds in population"] <-
   "Birds in population (thousands)"
 names(population_estimates)[names(population_estimates) == "Expected total birds lost"] <-
-  "Expected birds lost (thousands)"
+  "Birds lost (thousands)"
+names(population_estimates)[names(population_estimates) == "Expected share of birds lost"] <-
+  "Share of birds lost"
 
 escape_html <- function(x) {
   x <- gsub("&", "&amp;", as.character(x), fixed = TRUE)
@@ -287,21 +284,16 @@ cat("</tbody></table>\n")
 
 ```{=html}
 <div class="table-note" role="note"><strong>How to read this table:</strong>
-Bird counts are shown in thousand birds. The expected share is the expected national loss divided by the birds
-in that production type. Percentages in brackets show the 25th–75th percentile
-range across complete modelled outbreaks with the assumptions held fixed. When
-a farm is lost, all birds at that farm are counted as lost in that outbreak.</div>
+Bird counts are shown in thousand birds. The share lost compares birds lost
+with all birds in that production type. Percentages in brackets show the middle
+half of the modelled outcomes. The calculation is explained in the appendix.</div>
 ```
 
-The culling response creates an early, deliberate loss at identified farms to
-stop a much larger chain. Its national total includes about
-**`r thousand_birds(cull$mean_direct_cull_loss)` thousand birds**
-removed directly through culling. Even after counting those birds, total loss
-was lower with culling in **`r round(cull$runs_with_lower_total_loss_pct, 1)`%
-of the matched modelled outbreaks**. The average number of affected farms fell
-from `r round(cull$mean_baseline_farms_affected, 1)` to
-`r round(cull$mean_cull_farms_affected, 1)`, with an average of
-`r round(cull$mean_farms_culled, 1)` farms culled.
+Birds removed through culling are included in the loss shown in Table 1. Even
+after counting those birds, culling produces a lower total loss in
+**`r round(cull$runs_with_lower_total_loss_pct, 1)`% of the modelled
+outbreaks**. The result shows the trade-off: some birds are lost through early
+culling to prevent a much larger loss across the wider farm population.
 
 The percentages in brackets in Table 1 show the middle half of the modelled
 outcomes. They give planners a practical range rather than relying on one
