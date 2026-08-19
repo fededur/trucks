@@ -531,7 +531,8 @@ type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = produ
   geom_boxplot(width = .62, outlier.alpha = .2) +
   facet_wrap(~response, nrow = 1) +
   scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +
-  labs(title = "Birds lost by production type and response",
+  labs(title = paste("Culling reduces bird losses across",
+                     paste(types, collapse = " and ")),
        subtitle = "Matched management scenarios; production type does not alter spread",
        x = PRODUCTION_TYPE_LABEL, y = "Birds lost") + report_theme +
   theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
@@ -560,7 +561,7 @@ survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = pro
   scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Shelter status") +
   scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04)),
                      labels = function(x) paste0(round(x), "%")) +
-  labs(title = "Share of birds remaining unaffected",
+  labs(title = "Culling leaves more birds unaffected across shelter groups",
        subtitle = "Bird-weighted results by production type and shelter status",
        x = PRODUCTION_TYPE_LABEL, y = "Birds remaining unaffected (%)") + report_theme +
   theme(legend.position = "top",
@@ -591,7 +592,7 @@ farm_risk_plot <- ggplot() +
                  expand = FALSE) +
   scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
   scale_size_area(max_size = 6, name = "Birds") +
-  labs(title = "Farm bird-loss exposure with and without culling",
+  labs(title = "Culling reduces repeated farm exposure across New Zealand",
        subtitle = "Matched scenarios and one shared probability scale",
        x = NULL, y = NULL) +
   report_theme +

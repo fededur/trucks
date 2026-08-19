@@ -196,7 +196,7 @@ result, while the production-type rows show where those losses occur.
 
 ```{r}
 #| label: tbl-expected-population-loss
-#| tbl-cap: "Bird losses under no culling and culling"
+#| tbl-cap: "Culling reduces bird losses nationally and across production types"
 #| results: asis
 make_population_rows <- function(scenario, risk_data, loss_log) {
   rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
@@ -305,9 +305,9 @@ that a prompt and well-covered response is valuable under the modelled
 conditions. Whether that can be achieved depends on detection and operational
 capacity; the response assumptions are set out in the appendix.
 
-## Both production types benefit from a culling response
+## Culling reduces losses across production types
 
-![Birds lost for each production type across the modelled outbreaks, split into No culling and Culling panels on the same scale. Each box describes all birds lost in that category, not an average farm.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Birds lost by production type with no culling and with culling"}
+![Culling reduces bird losses across `r paste(production_types, collapse = " and ")`.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Birds lost by production type with no culling and with culling"}
 
 Both production types follow the same broad national pattern: losses are high
 without a response and lower with culling. A category with more birds exposed
@@ -345,7 +345,7 @@ between Eggs and Meat. The appendix explains how these shares are calculated.
 
 ## Some farming areas are exposed more often than others
 
-![Farm exposure across New Zealand without culling and with culling. Larger bubbles represent more birds. Colour shows how often all birds at each farm were counted as lost across the modelled outbreaks.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm bird-loss exposure without culling and with culling"}
+![Culling reduces repeated farm exposure, while the North Island remains more exposed.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm bird-loss exposure without culling and with culling"}
 
 @fig-farm-risk shows the spatial distribution of the simulation results across
 New Zealand. Each bubble is a farm at its fixed location. Larger bubbles hold
