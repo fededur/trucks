@@ -109,17 +109,23 @@ cull_type_loss_comparison <- paste(
 
 ## What this analysis tells us
 
-The culling response is the main planning scenario in this report. It reflects
-the realistic assumption that affected farms would be identified and managed.
-The no-culling scenario is retained only as a benchmark, so the value of the
-response can be seen against the same modelled outbreaks.
-
-Each outbreak begins at
+This analysis explores how an H5N1 outbreak could unfold across New Zealand's
+poultry farms. Each possible outbreak begins at
 `r config$simulation_controls$initial_phase_c_entities` farms selected at
-random. The results focus on the risk that remains after the response: the
-share of birds still lost, which production types carry those losses, whether
-shelter patterns differ, and where farms remain repeatedly exposed. The
-simulation method is explained in the appendix.
+random and follows the farms and birds that could be reached. Repeating this
+process shows the possible scale and location of losses, rather than presenting
+one outbreak as a forecast.
+
+In practice, an affected farm would not be left unmanaged. The report therefore
+uses early culling as its main planning scenario. Birds at a culled farm are
+counted as lost, but removing that farm can prevent it from spreading the
+outbreak further. A no-response scenario is kept only as a benchmark, allowing
+the reader to see how outcomes change when the response is in place.
+
+The results begin with the national share of birds lost, then consider
+production type, shelter and the areas where farms remain more exposed. Readers
+who want to understand the fixed farm data, repeated outbreaks, timing,
+distance and island assumptions can find those details in the appendix.
 
 ::: {.key-findings}
 
