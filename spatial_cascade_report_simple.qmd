@@ -12,187 +12,94 @@ execute:
   message: false
 ---
 
- 
-
 ```{=html}
-
 <style>
-
 .table-note,
-
 .figure-note {
-
   margin-top: -0.55rem;
-
   margin-bottom: 1.25rem;
-
   color: #7a8791;
-
   font-size: 0.82rem;
-
   line-height: 1.35;
-
 }
-
 .population-loss-table td[rowspan] {
-
   vertical-align: middle;
-
   font-weight: 600;
-
   background: #f5f7f8;
-
 }
-
 .key-findings {
-
   margin: 1rem 0 1.5rem;
-
   padding: 1rem 1.2rem 0.35rem;
-
   background: #fff7d6;
-
   border: 1px solid #eadb9a;
-
   border-left: 5px solid #d8bd55;
-
   border-radius: 0.35rem;
-
 }
-
 .key-findings-title {
-
   margin-bottom: 0.65rem;
-
   color: #5f5223;
-
   font-weight: 700;
-
 }
-
 </style>
-
 ```
-
- 
 
 ```{r}
 #| label: setup
-
 library(here)
-
 config <- jsonlite::fromJSON("config.json")
-
 results <- readRDS(here("assets", "spatial_cascade_results.rds"))
-
 summary <- read.csv(here("assets", "spatial_cascade_summary.csv"))
-
 farms <- results$farms
-
 runs <- results$monte_carlo_runs
-
 days <- config$model_parameters$simulation_days
-
 capacity_unit <- config$production_metrics$production_capacity_unit
-
 if (is.null(capacity_unit) || !length(capacity_unit)) capacity_unit <- "birds"
-
 thousand_birds <- function(x, digits = 1) {
-
   format(round(x / 1000, digits), nsmall = digits, big.mark = ",", trim = TRUE)
-
 }
-
 mean_loss_share <- 100 * summary$mean_production_loss /
-
   sum(farms$production_yield)
-
 cull <- results$cull_comparison_summary
-
 farm_risk <- results$farm_risk_summary
-
 cull_farm_risk <- results$cull_farm_risk_summary
-
 cull_national_loss_pct <- 100 * cull$mean_cull_total_loss /
-
   sum(farms$production_yield)
-
 cull_average_bird_survival <- results$cull_average_bird_survival
-
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
-
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
-
 initial_starts <- config$simulation_controls$initial_phase_c_entities
-
- 
-
 island_story <- function(group_name) {
-
   rows <- farms$barrier_group == group_name
-
   group_size <- sum(rows)
-
   start_probability <- 100 * (1 -
-
     choose(nrow(farms) - group_size, initial_starts) /
-
       choose(nrow(farms), initial_starts))
-
   group_risk <- mean(farm_risk$probability_lost_pct[
-
     farm_risk$barrier_group == group_name])
-
   sheltered_share <- 100 * mean(farms$is_sheltered[rows])
-
   data.frame(group = group_name, farms = group_size,
-
     start_probability = start_probability, mean_lost_probability = group_risk,
-
     sheltered_share = sheltered_share)
-
 }
-
- 
-
 island_comparison <- rbind(island_story(north_name), island_story(south_name))
-
 north <- island_comparison[island_comparison$group == north_name, ]
-
 south <- island_comparison[island_comparison$group == south_name, ]
-
 cull_north_probability <- mean(cull_farm_risk$probability_lost_pct[
-
   cull_farm_risk$barrier_group == north_name])
-
 cull_south_probability <- mean(cull_farm_risk$probability_lost_pct[
-
   cull_farm_risk$barrier_group == south_name])
-
 production_types <- sort(unique(farms$production_type))
-
 cull_type_loss_pct <- vapply(production_types, function(type) {
-
   type_birds <- sum(farms$production_yield[farms$production_type == type])
-
   expected_loss <- sum(cull_farm_risk$expected_loss_contribution[
-
     cull_farm_risk$production_type == type])
-
   100 * expected_loss / type_birds
-
 }, numeric(1))
-
 cull_type_loss_order <- order(cull_type_loss_pct, decreasing = TRUE)
-
 cull_type_loss_comparison <- paste(
-
   paste0(tolower(production_types[cull_type_loss_order]), ": ",
-
          round(cull_type_loss_pct[cull_type_loss_order], 1), "%"),
-
   collapse = "; ")
-
 ```
 
 ## How this report is framed
@@ -206,11 +113,7 @@ and comparison are in the appendix.
 
 ::: {.key-findings}
 
- 
-
 <div class="key-findings-title">Key findings</div>
-
- 
 
 - With culling, the expected national share of birds lost is
   **`r round(cull_national_loss_pct, 1)`%**. This remaining loss is the main
@@ -219,301 +122,154 @@ and comparison are in the appendix.
 - The no-culling benchmark reaches **`r round(mean_loss_share, 1)`%** bird loss,
   showing how much the response changes the outcome.
 
- 
-
 - With culling, the expected share of birds lost by production type is
   **`r cull_type_loss_comparison`**.
 
- 
-
 - The average chance of a farm being lost is
-
   `r round(cull_north_probability, 1)`% in the North Island and
-
   `r round(cull_south_probability, 1)`% in the South Island.
-
   The North Island remains more exposed because more farms are located there, making a random
-
   start there more likely, while spread between islands is blocked.
 
- 
-
 - No two outbreaks unfold in exactly the same way. Response planning should
-
   therefore allow for a range of possible losses, not rely on one estimate.
 
- 
-
 - These findings can help compare response choices and focus preparedness.
-
   They should not be read as a forecast of a future outbreak.
 
- 
-
 :::
-
- 
 
 ```{r}
 #| label: production-reference-table
 #| include: false
-
 capacity_reference_row <- function(label, rows) {
-
   capacity <- farms$production_yield[rows]
-
   data.frame(
-
     `Production type` = label,
-
     Farms = length(capacity),
-
     `Total birds` = sum(capacity),
-
     `Share of all birds` = 100 * sum(capacity) /
-
       sum(farms$production_yield),
-
     `Average per farm` = mean(capacity),
-
     `Median per farm` = median(capacity),
-
     `Middle half per farm` = paste0(
-
       thousand_birds(unname(quantile(capacity, .25))), " to ",
-
       thousand_birds(unname(quantile(capacity, .75)))),
-
     `Minimum to maximum per farm` = paste0(
-
       thousand_birds(min(capacity)), " to ",
-
       thousand_birds(max(capacity))),
-
     check.names = FALSE)
-
 }
-
 capacity_reference <- do.call(rbind, c(
-
   lapply(sort(unique(farms$production_type)), function(type) {
-
     capacity_reference_row(type, farms$production_type == type)
-
   }),
-
   list(capacity_reference_row("Grand total", rep(TRUE, nrow(farms))))))
-
 capacity_reference$`Total birds` <- format(
-
   round(capacity_reference$`Total birds` / 1000, 1), nsmall = 1, big.mark = ",")
-
 capacity_reference$`Share of all birds` <- paste0(
-
   round(capacity_reference$`Share of all birds`, 1), "%")
-
 capacity_reference$`Average per farm` <- thousand_birds(
-
   capacity_reference$`Average per farm`)
-
 capacity_reference$`Median per farm` <- thousand_birds(
-
   capacity_reference$`Median per farm`)
-
 ```
 
- 
-
- 
-
 ## Culling limits the national loss, but around one in five birds remains at risk
-
- 
 
 With culling, the expected national share of birds lost is
 **`r round(cull_national_loss_pct, 1)`%**. @tbl-expected-population-loss shows
 that remaining national loss and how it is distributed across eggs and meat.
 The no-culling result provides the benchmark.
 
- 
-
 ```{r}
 #| label: tbl-expected-population-loss
 #| tbl-cap: "Culling limits the national loss, while losses remain across eggs and meat"
-
 #| results: asis
-
 make_population_rows <- function(scenario, risk_data, loss_log) {
-
   rows <- lapply(sort(unique(risk_data$production_type)), function(type) {
-
     in_type <- risk_data$production_type == type
-
     total_birds <- sum(risk_data$production_yield[in_type])
-
     expected_loss <- sum(risk_data$expected_loss_contribution[in_type])
-
     loss_share <- 100 * loss_log[, type] / total_birds
-
     data.frame(
-
       `Management response` = scenario,
-
       `Production type` = type,
-
       `Farms in population` = sum(in_type),
-
       `Birds in population` = total_birds,
-
       `Expected total birds lost` = expected_loss,
-
       `Expected share of birds lost` = 100 * expected_loss / total_birds,
-
       `Share p25` = unname(quantile(loss_share, .25)),
-
       `Share p75` = unname(quantile(loss_share, .75)),
-
       check.names = FALSE)
-
   })
-
   total_birds <- sum(risk_data$production_yield)
-
   expected_loss <- sum(risk_data$expected_loss_contribution)
-
   total_loss_share <- 100 * rowSums(loss_log) / total_birds
-
   rows[[length(rows) + 1L]] <- data.frame(
-
     `Management response` = scenario,
-
     `Production type` = "Total",
-
     `Farms in population` = nrow(risk_data),
-
     `Birds in population` = total_birds,
-
     `Expected total birds lost` = expected_loss,
-
     `Expected share of birds lost` = 100 * expected_loss / total_birds,
-
     `Share p25` = unname(quantile(total_loss_share, .25)),
-
     `Share p75` = unname(quantile(total_loss_share, .75)),
-
     check.names = FALSE)
-
   do.call(rbind, rows)
-
 }
-
- 
-
 population_estimates <- rbind(
   make_population_rows("Culling", cull_farm_risk,
                        results$cull_production_loss_by_type_log),
   make_population_rows("No culling", farm_risk,
                        results$production_loss_by_type_log))
-
 population_estimates$`Birds in population` <- format(
-
   round(population_estimates$`Birds in population` / 1000, 1),
-
   nsmall = 1, big.mark = ",")
-
 population_estimates$`Expected total birds lost` <- format(
-
   round(population_estimates$`Expected total birds lost` / 1000, 1),
-
   nsmall = 1, big.mark = ",")
-
 population_estimates$`Expected share of birds lost` <- paste0(
-
   round(population_estimates$`Expected share of birds lost`, 1), "% (",
-
   round(population_estimates$`Share p25`, 1), "% to ",
-
   round(population_estimates$`Share p75`, 1), "%)")
-
 population_estimates$`Share p25` <- population_estimates$`Share p75` <- NULL
-
 names(population_estimates)[names(population_estimates) == "Birds in population"] <-
-
   "Birds in population (thousands)"
-
 names(population_estimates)[names(population_estimates) == "Expected total birds lost"] <-
-
   "Expected birds lost (thousands)"
-
- 
-
 escape_html <- function(x) {
-
   x <- gsub("&", "&amp;", as.character(x), fixed = TRUE)
-
   x <- gsub("<", "&lt;", x, fixed = TRUE)
-
   x <- gsub(">", "&gt;", x, fixed = TRUE)
-
   gsub('"', "&quot;", x, fixed = TRUE)
-
 }
-
- 
-
 headers <- names(population_estimates)
-
 cat('<table class="table table-sm table-striped population-loss-table">\n<thead><tr>')
-
 cat(paste0("<th>", escape_html(headers), "</th>", collapse = ""))
-
 cat("</tr></thead>\n<tbody>\n")
-
 for (response in unique(population_estimates$`Management response`)) {
-
   group_rows <- population_estimates[
-
     population_estimates$`Management response` == response, , drop = FALSE]
-
   for (i in seq_len(nrow(group_rows))) {
-
     cat("<tr>")
-
     if (i == 1L) {
-
       cat(sprintf('<td rowspan="%d">%s</td>', nrow(group_rows),
-
                   escape_html(response)))
-
     }
-
     cat(paste0("<td>", escape_html(unlist(group_rows[i, -1], use.names = FALSE)),
-
                "</td>", collapse = ""))
-
     cat("</tr>\n")
-
   }
-
 }
-
 cat("</tbody></table>\n")
-
 ```
-
- 
 
 ```{=html}
-
 <div class="table-note" role="note">Bird counts are shown in thousand birds. The expected share is the expected national loss divided by the birds in that production type. Percentages in brackets show the 25th–75th percentile
-
 range across complete modelled outbreaks with the assumptions held fixed. When
-
 a farm is lost, all birds at that farm are counted as lost in that outbreak.</div>
-
 ```
-
- 
 
 The culling total includes **`r thousand_birds(cull$mean_direct_cull_loss)`
 thousand birds** removed at identified farms. Even with those birds counted as
@@ -523,91 +279,53 @@ of affected farms falls from **`r round(cull$mean_baseline_farms_affected, 1)`**
 in the benchmark to **`r round(cull$mean_cull_farms_affected, 1)`** with the
 response, including **`r round(cull$mean_farms_culled, 1)`** farms culled.
 
- 
-
 ## Bird losses remain across both eggs and meat after culling
-
- 
 
 ![After culling, bird losses remain across `r paste(tolower(production_types), collapse = " and ")`.](assets/spatial_cascade_loss_by_production_type.svg){#fig-loss-by-type fig-alt="Birds lost by production type with culling first and no culling as a benchmark"}
 
- 
-
 ```{=html}
-
 <div class="figure-note" role="note">Culling is shown first; no culling is the benchmark. Each box shows the spread of total population-level bird losses across the repeated outbreaks for that production type.</div>
-
 ```
-
- 
 
 With culling, the expected shares of birds lost are
 **`r cull_type_loss_comparison`**. Neither production type avoids the remaining
 risk. Similar percentages can still represent different numbers of birds when
 the production-type populations differ.
 
- 
-
- 
-
 ## Shelter does not produce the same pattern for eggs and meat
-
- 
 
 ![After culling, shelter patterns differ across production types.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at sheltered and unsheltered farms remaining unaffected by production type, with culling first and no culling as a benchmark"}
 
- 
-
 ```{=html}
-
 <div class="figure-note" role="note">
-
 Higher bars mean that a larger share of birds remains unaffected. Culling is
 shown first; no culling is the benchmark. Birds at culled farms are counted as
 lost. The bars are weighted by bird numbers, not by the number of farms.</div>
-
 ```
-
- 
 
 With culling, **`r round(cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
 of birds at sheltered farms and
 **`r round(cull_average_bird_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**
 of birds at unsheltered farms remain unaffected nationally.
 
- 
-
 The shelter pattern differs between eggs and meat. This indicates that shelter
 status alone does not explain the result: farm location and the number of birds
 held at those farms also shape the observed pattern.
 
- 
-
 ## Remaining farm exposure is concentrated in the North Island
-
- 
 
 ![After culling, farm exposure remains concentrated in the North Island.](assets/spatial_cascade_farm_risk_map.svg){#fig-farm-risk fig-alt="New Zealand farm exposure with culling first and no culling as a benchmark"}
 
- 
-
 ```{=html}
-
 <div class="figure-note" role="note">
-
 The culling map is shown first; no culling is the benchmark. Each bubble is one
 farm, larger bubbles hold more birds, and darker colours mean the farm is lost
 in a larger share of outbreaks. A culled farm is counted as lost.</div>
-
 ```
-
- 
 
 @fig-farm-risk shows that exposure remains uneven after culling. The strongest
 concentration is in the North Island, although the response substantially
 reduces exposure compared with the benchmark.
-
- 
 
 With culling, the national average chance of a farm being lost is
 **`r round(mean(cull_farm_risk$probability_lost_pct), 1)`%**.
@@ -616,11 +334,7 @@ Farms are directly culled in
 **`r round(mean(cull_farm_risk$probability_culled_pct), 1)`%** of outbreaks on
 average.
 
- 
-
 ### North Island farms carry more of the remaining exposure
-
- 
 
 With culling, the average chance of a farm being lost is
 **`r round(cull_north_probability, 1)`% in the North Island** and
@@ -631,359 +345,184 @@ events in the North Island. Shelter coverage is similar across the islands—
 **`r round(south$sheltered_share, 1)`%** in the South Island—so it does not
 explain the geographic gap.
 
- 
-
 # Appendix: Method and use
 
- 
-
 ## Overview of the simulation
-
- 
 
 The simulation follows a H5N1 outbreak event through a fixed population of farms.
 
 Each farm keeps its real location and recorded attributes, including its bird
-
 count, production type and shelter category. Each modelled outbreak begins at
-
 `r config$simulation_controls$initial_phase_c_entities` farms selected at
-
 random and can reach other farms, with nearby farms generally more exposed
-
 than distant farms.
 
- 
-
 A single event can develop in many ways, so the analysis considers many
-
 plausible scenarios rather than relying on one chain. Those scenarios show the
-
 central result, the range of outcomes and the farms that are repeatedly
-
 exposed. Each event is also considered with and without culling. This creates
-
 a fair management comparison because both versions begin from the same places
-
 and face the same underlying chance conditions.
 
- 
-
 The scenarios are not forecasts of what will happen. They are a structured
-
 way to understand possible scale, location and uncertainty, and to test how
-
 much a management response could change the outcome.
-
- 
 
 ### Repeated scenarios and the paired comparison
 
- 
-
 One run gives only one possible chain of events. This analysis repeats the
-
 whole scenario **`r format(runs, big.mark = ",")` times** over the same fixed
-
 farm population. Starting farms and chance outcomes can differ between runs.
 
 Looking across all runs shows the usual result as well as less common severe
-
 outcomes.
 
- 
-
 More runs make the reported pattern steadier; they do not make the assumptions
-
 more accurate. Results still depend on the farm data and selected settings.
 
- 
-
 Each scenario begins with every farm unaffected and
-
 `r config$simulation_controls$initial_phase_c_entities` farms starting the
-
 event. The model follows the next `r days` days. A farm may be reached,
-
 incubate, become active and then have all its birds counted as lost.
 
- 
-
 Every starting pattern is run twice. The no-culling and culling versions use
-
 the same farms and prepared random values. This pairing keeps the comparison
-
 focused on the management response rather than unrelated random differences.
-
- 
 
 ![Repeated outbreaks show why national losses are reported as a range.](assets/spatial_cascade_loss_distribution.svg){#fig-loss-distribution fig-alt="Percentage of birds lost and remaining in repeated modelled outbreaks with no culling and with culling"}
 
- 
-
 ```{=html}
-
 <div class="figure-note" role="note">
-
 Each thin bar is one complete modelled outbreak and represents 100% of birds in
-
 the national farm population. Orange shows birds lost and green shows birds
-
 remaining unaffected. Bars are ordered from lower to higher loss within each
-
 panel; this is not a timeline.
-
 Outcomes vary even when the farm population and model settings stay the same. The larger
-
 green area with culling shows that the response reduces losses across most of
-
 the repeated outbreaks.</div>
-
 ```
 
- 
-
 Without culling, nine out of ten modelled outbreaks finished between
-
 `r thousand_birds(summary$loss_p05)` and
-
 `r thousand_birds(summary$loss_p95)` thousand birds lost.
 
 This range is why the report presents both a central estimate and a spread of
-
 possible outcomes.
 
- 
-
 Under the current culling settings, `r round(cull$coverage_pct)`% of active
-
 farms are identified for response and are culled
-
 `r cull$response_delay_days` day after becoming active. There is no separate
-
 daily cap. All birds at a
-
 culled farm count as a direct loss, while the farm stops contributing to later
-
 spread.
-
- 
 
 ### How the bird shares are calculated
 
- 
-
 The main loss and survival results are based on bird counts. For each modelled
-
 outbreak, the analysis adds the birds at farms that are lost and divides that
-
 number by all birds in the same group. The share remaining unaffected is 100%
-
 minus the share lost. Birds at culled farms are included in the loss.
 
- 
-
 Groups are kept separate. For example, the Eggs–Sheltered result uses birds at
-
 sheltered egg farms only. The Total–Sheltered result combines Eggs and Meat but
-
 still uses sheltered farms only. The same calculation is repeated for
-
 unsheltered farms and for each management response.
 
- 
-
 The final percentage combines the results from the repeated outbreaks. It is
-
 not an average farm result: each farm contributes according to the number of
-
 birds it holds. Farm counts are reported separately where they are useful for
-
 response planning.
-
- 
 
 ### Timing and distance
 
- 
-
 ![The left panel follows one farm after it is reached and shows when it can spread, when it would normally move to lost production, and when a covered farm would be culled. The right panel shows how one transmission opportunity becomes less likely as the distance between two farms increases.](assets/spatial_cascade_timing_distance_concept.svg){#fig-timing-distance fig-alt="Two-panel concept figure showing farm state timing and spatial transmission decay"}
 
- 
-
 The two parts of the model work together. Timing controls when a farm can
-
 spread. Distance controls how likely it is to reach another farm while it is
-
 active.
 
- 
-
 The left panel begins when a farm is reached. It spends
-
 `r config$model_parameters$incubation_period_days` days incubating and cannot
-
 spread during that period. It then becomes active for up to
-
 `r config$model_parameters$active_period_days` days. Without control, it moves
-
 to lost production at the end of that active period. If the farm is covered by
-
 the culling policy, it is culled
-
 `r config$cull_response$response_delay_days` day after becoming active and can
-
 no longer spread. Coverage still matters: only
-
 `r round(100 * config$cull_response$coverage)`% of active farms are selected
-
 for that response under the current settings.
 
- 
-
 The right panel begins with one active farm and one unaffected farm. At short
-
 distances, the model gives that transmission opportunity a higher chance. The
-
 chance falls smoothly as distance increases. Shelter lowers the whole curve
-
 for a sheltered farm. The different-island curve also includes the island
-
 setting; with the current value of
-
 `r config$model_parameters$cross_barrier_transmission_multiplier`, it stays at
-
 zero because cross-island spread is blocked.
 
- 
-
 This curve describes one opportunity from one active source. When several
-
 active farms can reach the same farm on the same day, the model combines those
-
 opportunities, so the farm's overall chance of being reached can be higher than
-
 one line alone suggests.
-
- 
 
 ### Movement between islands
 
- 
-
 The farm data identify which island each farm belongs to. Farms on the same
-
 island have no extra barrier. For farms on different islands, the model applies
-
 the cross-island setting after allowing for distance and shelter.
 
- 
-
 The current value is
-
 **`r config$model_parameters$cross_barrier_transmission_multiplier`**. A value
-
 of 0 blocks spread between islands. A value such as 0.05 leaves a small
-
 cross-island pathway, while 1 removes the extra island penalty but still allows
-
 distance to reduce spread. A value above 0 should only be used when there is a
-
 credible route, such as ferry movements, shared equipment or supplier links.
-
- 
 
 ## Farm-level descriptive context
 
- 
-
 @tbl-farm-descriptive-table describes a typical individual
-
 farm in the dataset.
-
- 
 
 ```{r}
 #| label: tbl-farm-descriptive-table
 #| tbl-cap: "Bird-count distribution across individual farms"
-
 farm_context <- capacity_reference[, c("Production type", "Farms",
-
   "Average per farm", "Median per farm", "Middle half per farm",
-
   "Minimum to maximum per farm")]
-
 names(farm_context)[3:6] <- c(
-
   "Average per farm (thousand birds)",
-
   "Median per farm (thousand birds)",
-
   "Middle half per farm (thousand birds)",
-
   "Minimum to maximum per farm (thousand birds)")
-
 knitr::kable(farm_context, row.names = FALSE)
-
 ```
-
- 
 
 ## Appropriate use and limitations
 
- 
-
 Use the results to compare plausible management settings, understand the
-
 possible national scale of loss and identify places that are repeatedly
-
 exposed. The expected whole-population loss is the clearest headline for
-
 communication; farm averages provide context but answer a different question.
 
- 
-
 The model simplifies real pathways. Straight-line distance cannot fully
-
 represent movements of birds, staff, vehicles or shared equipment, nor wind,
-
 cleaning practice and operational constraints. Results depend on the quality
-
 of the farm table and the selected assumptions. They should support planning
-
 and discussion, not replace field evidence or operational judgement.
-
- 
 
 ## Running the analysis again
 
- 
-
 Start with the complete farm table in `data/map_farm_data.csv`. If column names change,
-
 update the mappings in `config.json`. Review the starting-farm, timing,
-
 distance, shelter, island, culling and run settings, then run
-
 `source("spatial_cascade_monte_carlo.R")`. Refreshed figures and tables are
-
 written to `assets/`. Run `quarto render spatial_cascade_report.qmd` to rebuild
-
 this report.
 
- 
-
 The analysis also writes farm-level risk files to `assets/`. These record how
-
 often each farm begins an outbreak, becomes affected, is lost or is culled,
-
 along with its contribution to the expected national loss. Because starting
-
 farms are selected at random, individual farms will not start exactly the same
-
 number of outbreaks. Under the current settings, each farm is selected about
-
 `r round(runs * config$simulation_controls$initial_phase_c_entities / nrow(farms), 1)`
-
 times on average.
-
