@@ -107,6 +107,20 @@ cull_type_loss_comparison <- paste(
   collapse = "; ")
 ```
 
+## What this analysis tells us
+
+The culling response is the main planning scenario in this report. It reflects
+the realistic assumption that affected farms would be identified and managed.
+The no-culling scenario is retained only as a benchmark, so the value of the
+response can be seen against the same modelled outbreaks.
+
+Each outbreak begins at
+`r config$simulation_controls$initial_phase_c_entities` farms selected at
+random. The results focus on the risk that remains after the response: the
+share of birds still lost, which production types carry those losses, whether
+shelter patterns differ, and where farms remain repeatedly exposed. The
+simulation method is explained in the appendix.
+
 ::: {.key-findings}
 
 <div class="key-findings-title">Key findings</div>
@@ -166,11 +180,6 @@ capacity_reference$`Median per farm` <- thousand_birds(
 ```
 
 ## Around one in five birds remains at risk nationally
-
-The culling response is the main planning case because an affected farm would
-realistically trigger a response. No culling is included only as a benchmark
-to show how much the response changes the outcome. Details of the simulation
-and comparison are in the appendix.
 
 The main planning scenario leaves an expected national loss of
 **`r round(cull_national_loss_pct, 1)`% of birds**.
