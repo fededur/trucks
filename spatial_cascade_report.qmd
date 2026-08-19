@@ -327,6 +327,19 @@ provides the detailed production-type percentages and ranges.
 
 ![Bird-weighted survival differs by production type and protection level.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at protected and unprotected farms remaining unaffected by production type and national total, with no culling and with culling"}
 
+```{=html}
+<div class="figure-note" role="note"><strong>How to read this figure:</strong>
+Each bar shows the percentage of birds remaining unaffected, not the percentage
+of farms. Bird numbers at all farms in the production and protection group are
+added together, so larger farms contribute more to the result. “Total” covers
+the whole national bird population. Compare protected and unprotected bars
+within each management panel. <strong>What it means:</strong> The culling panel
+shows a larger share of birds remaining unaffected. Differences between
+protected and unprotected bars also reflect where farms are located, their bird
+numbers and where outbreaks begin; the bars do not measure the effect of
+protection on its own.</div>
+```
+
 The figure compares the share of birds that remain unaffected for each
 production type, the national total and each protection level. Every farm is weighted by its bird count,
 so a larger farm contributes more to the result than a smaller farm. Without
