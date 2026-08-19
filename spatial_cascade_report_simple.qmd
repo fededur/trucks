@@ -358,16 +358,8 @@ count, production type and shelter category. Each modelled outbreak begins at
 random and can reach other farms, with nearby farms generally more exposed
 than distant farms.
 
-A single event can develop in many ways, so the analysis considers many
-plausible scenarios rather than relying on one chain. Those scenarios show the
-central result, the range of outcomes and the farms that are repeatedly
-exposed. Each event is also considered with and without culling. This creates
-a fair management comparison because both versions begin from the same places
-and face the same underlying chance conditions.
-
-The scenarios are not forecasts of what will happen. They are a structured
-way to understand possible scale, location and uncertainty, and to test how
-much a management response could change the outcome.
+A single event can develop in many ways, so the analysis considers a range of
+possible outbreaks rather than relying on one chain.
 
 ### Repeated scenarios and the paired comparison
 
@@ -376,10 +368,8 @@ whole scenario **`r format(runs, big.mark = ",")` times** over the same fixed
 farm population. Starting farms and chance outcomes can differ between runs.
 
 Looking across all runs shows the usual result as well as less common severe
-outcomes.
-
-More runs make the reported pattern steadier; they do not make the assumptions
-more accurate. Results still depend on the farm data and selected settings.
+outcomes. More runs make this pattern steadier; they do not make the model
+assumptions more accurate.
 
 Each scenario begins with every farm unaffected and
 `r config$simulation_controls$initial_phase_c_entities` farms starting the
@@ -395,44 +385,20 @@ focused on the management response rather than unrelated random differences.
 ```{=html}
 <div class="figure-note" role="note">
 Each thin bar is one complete modelled outbreak and represents 100% of birds in
-the national farm population. Orange shows birds lost and green shows birds
-remaining unaffected. Bars are ordered from lower to higher loss within each
-panel; this is not a timeline.
-Outcomes vary even when the farm population and model settings stay the same. The larger
-green area with culling shows that the response reduces losses across most of
-the repeated outbreaks.</div>
+the national farm population. Orange is calculated by adding the birds at lost
+or culled farms and dividing by all birds; green is the share remaining. This
+weights farms by their bird numbers rather than treating every farm equally.
+The same calculation is used within each production type or shelter group,
+using only the birds in that group. Bars are ordered from lower to higher loss
+within each panel; this is not a timeline.</div>
 ```
 
-Without culling, nine out of ten modelled outbreaks finished between
-`r thousand_birds(summary$loss_p05)` and
-`r thousand_birds(summary$loss_p95)` thousand birds lost.
-
-This range is why the report presents both a central estimate and a spread of
-possible outcomes.
-
-Under the current culling settings, `r round(cull$coverage_pct)`% of active
-farms are identified for response and are culled
-`r cull$response_delay_days` day after becoming active. There is no separate
-daily cap. All birds at a
-culled farm count as a direct loss, while the farm stops contributing to later
-spread.
-
-### How the bird shares are calculated
-
-The main loss and survival results are based on bird counts. For each modelled
-outbreak, the analysis adds the birds at farms that are lost and divides that
-number by all birds in the same group. The share remaining unaffected is 100%
-minus the share lost. Birds at culled farms are included in the loss.
-
-Groups are kept separate. For example, the Eggs–Sheltered result uses birds at
-sheltered egg farms only. The Total–Sheltered result combines Eggs and Meat but
-still uses sheltered farms only. The same calculation is repeated for
-unsheltered farms and for each management response.
-
-The final percentage combines the results from the repeated outbreaks. It is
-not an average farm result: each farm contributes according to the number of
-birds it holds. Farm counts are reported separately where they are useful for
-response planning.
+Outcomes vary even though the farm population and settings remain fixed. In the
+main response scenario, the middle half of outbreaks lose between
+**`r round(cull_national_loss_p25, 1)`% and
+`r round(cull_national_loss_p75, 1)`%** of birds. The larger green area in the
+first panel shows that the response leaves more birds unaffected across most
+of the repeated outbreaks.
 
 ### Timing and distance
 
@@ -455,11 +421,9 @@ for that response under the current settings.
 
 The right panel begins with one active farm and one unaffected farm. At short
 distances, the model gives that transmission opportunity a higher chance. The
-chance falls smoothly as distance increases. Shelter lowers the whole curve
-for a sheltered farm. The different-island curve also includes the island
-setting; with the current value of
-`r config$model_parameters$cross_barrier_transmission_multiplier`, it stays at
-zero because cross-island spread is blocked.
+chance falls smoothly as distance increases. Shelter lowers the whole curve,
+while the different-island curve also reflects the island setting described
+in the next section.
 
 This curve describes one opportunity from one active source. When several
 active farms can reach the same farm on the same day, the model combines those
