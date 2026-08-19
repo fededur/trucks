@@ -112,23 +112,17 @@ cull_type_loss_comparison <- paste(
 <div class="key-findings-title">Key findings</div>
 
 - The expected national share of birds lost is
-  **`r round(cull_national_loss_pct, 1)`%**, compared with
-  **`r round(mean_loss_share, 1)`%** in the no-response benchmark.
+  **`r round(cull_national_loss_pct, 1)`%**.
 
-- The remaining loss is similar across production types:
+- Bird loss is similar across production types:
   **`r cull_type_loss_comparison`**.
 
-- The average chance of a farm being lost is
+- The chance of a farm being affected by an outbreak is
   `r round(cull_north_probability, 1)`% in the North Island and
   `r round(cull_south_probability, 1)`% in the South Island.
   The North Island remains more exposed because more farms are located there,
   making a random start there more likely, while spread between islands is
   blocked.
-
-- The middle half of modelled outbreaks lose between
-  **`r round(cull_national_loss_p25, 1)`% and
-  `r round(cull_national_loss_p75, 1)`%** of birds, showing that the national
-  outcome can still vary substantially.
 
 - These findings can help compare response choices and focus preparedness.
   They should not be read as a forecast of a future outbreak.
