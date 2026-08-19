@@ -526,13 +526,12 @@ if (CULL_COMPARISON) {
   type_loss_data <- rbind(type_loss_data, cull_type_loss_data)
 }
 type_loss_data$response <- factor(type_loss_data$response,
-                                  levels = c("No culling", "Culling"))
+                                  levels = c("Culling", "No culling"))
 type_loss_plot <- ggplot(type_loss_data, aes(production_type, loss, fill = production_type)) +
   geom_boxplot(width = .62, outlier.alpha = .2) +
   facet_wrap(~response, nrow = 1) +
   scale_fill_manual(values = setNames(hcl.colors(length(types), "Dark 3"), types)) +
-  labs(title = paste("Culling reduces bird losses across",
-                     paste(types, collapse = " and ")),
+  labs(title = "Remaining bird losses are similar across production types",
        subtitle = "Matched management scenarios; production type does not alter spread",
        x = PRODUCTION_TYPE_LABEL, y = "Birds lost") + report_theme +
   theme(strip.text = element_text(face = "bold", colour = "#173B57", size = 12))
@@ -554,14 +553,14 @@ if (CULL_COMPARISON) {
   survival_data <- rbind(survival_data, cull_survival_data)
 }
 survival_data$response <- factor(survival_data$response,
-                                 levels = c("No culling", "Culling"))
+                                 levels = c("Culling", "No culling"))
 survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = protection_group)) +
   geom_col(position = position_dodge(.72), width = .66) + geom_text(aes(label = sprintf("%.1f%%", survival)), position = position_dodge(.72), vjust = -.4) +
   facet_wrap(~response, nrow = 1) +
   scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Shelter status") +
   scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04)),
                      labels = function(x) paste0(round(x), "%")) +
-  labs(title = "Culling leaves more birds unaffected across shelter groups",
+  labs(title = "Shelter patterns differ across production types after the response",
        subtitle = "Bird-weighted results by production type and shelter status",
        x = PRODUCTION_TYPE_LABEL, y = "Birds remaining unaffected (%)") + report_theme +
   theme(legend.position = "top",
@@ -577,7 +576,7 @@ map_risk_data <- if (CULL_COMPARISON) {
             response = "No culling")
 }
 map_risk_data$response <- factor(map_risk_data$response,
-                                 levels = c("No culling", "Culling"))
+                                 levels = c("Culling", "No culling"))
 farm_risk_plot <- ggplot() +
   geom_polygon(data = nz_boundaries, aes(lon, lat, group = group),
     fill = "#E5E7E9", colour = boundary_line_colour, linewidth = .25) +
@@ -592,7 +591,7 @@ farm_risk_plot <- ggplot() +
                  expand = FALSE) +
   scale_colour_viridis_c(option = "C", name = "Probability lost (%)") +
   scale_size_area(max_size = 6, name = "Birds") +
-  labs(title = "Culling reduces repeated farm exposure across New Zealand",
+  labs(title = "Remaining farm exposure is concentrated in the North Island",
        subtitle = "Matched scenarios and one shared probability scale",
        x = NULL, y = NULL) +
   report_theme +
