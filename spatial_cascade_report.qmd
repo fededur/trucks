@@ -61,6 +61,8 @@ mean_loss_share <- 100 * summary$mean_production_loss /
 cull <- results$cull_comparison_summary
 farm_risk <- results$farm_risk_summary
 cull_farm_risk <- results$cull_farm_risk_summary
+cull_national_loss_pct <- 100 * cull$mean_cull_total_loss /
+  sum(farms$production_yield)
 cull_average_survival <- results$cull_average_survival
 north_name <- grep("^North", unique(farms$barrier_group), value = TRUE)[1]
 south_name <- grep("^South", unique(farms$barrier_group), value = TRUE)[1]
@@ -124,8 +126,8 @@ appendix.
 - Without culling, an outbreak could cause widespread bird losses across New
   Zealand.
 
-- Acting early through culling could reduce the expected national loss by
-  **`r round(cull$net_loss_reduction_pct, 1)`%** under the current settings.
+- With early culling, the expected national share of birds lost is
+  **`r round(cull_national_loss_pct, 1)`%** under the current settings.
 
 - No two outbreaks unfold in exactly the same way. Response planning should
   therefore allow for a range of possible losses, not rely on one estimate.
