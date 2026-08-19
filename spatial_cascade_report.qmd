@@ -323,38 +323,36 @@ can carry a larger absolute loss. Production type is used here to describe
 where losses fall; it does not change how spread occurs in the model. Table 1
 provides the detailed production-type percentages and ranges.
 
-## Protection contributes to keeping birds unaffected
+## Protection and culling change how many birds remain unaffected
 
-![Bird-weighted survival differs by production type and protection level.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at protected and unprotected farms remaining unaffected by production type and national total, with no culling and with culling"}
+![Culling increases the expected share of birds remaining unaffected.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Expected share of birds at protected and unprotected farms remaining unaffected by production type and national total, with no culling and with culling"}
 
 ```{=html}
 <div class="figure-note" role="note"><strong>How to read this figure:</strong>
-Each bar shows a survival rate calculated within that specific production and
-protection group: birds at unaffected farms in the group are divided by all
-birds in the same group, then multiplied by 100. For example, the protected
-Eggs bar uses all birds at protected egg farms as its denominator. Larger farms
-therefore contribute more to the result. “Total” combines all production types
-but still keeps protected and unprotected birds as separate groups. Birds at
-culled farms are not counted as surviving. Compare protected and unprotected
-bars within each management panel. <strong>What it means:</strong> The culling panel
+Each bar answers: out of all birds in this group, what share is expected to
+remain unaffected? In every modelled outbreak, birds at unaffected farms are
+added together and divided by all birds in the same group. The repeated
+outbreaks are then combined into the result shown. This is not an average farm:
+each farm contributes its actual bird count. A bar at 75% means that 75 out of
+every 100 birds in that group are expected to remain unaffected and 25 are
+expected to be lost. “Total” combines production types but keeps protected and
+unprotected birds separate. Birds at culled farms are counted as lost. Compare
+protected and unprotected bars within each management panel.
+<strong>What it means:</strong> The culling panel
 shows a larger share of birds remaining unaffected. Differences between
 protected and unprotected bars also reflect where farms are located, their bird
 numbers and where outbreaks begin; the bars do not measure the effect of
 protection on its own.</div>
 ```
 
-The figure compares the share of birds that remain unaffected for each
-production type, the national total and each protection level. Every farm is weighted by its bird count,
-so a larger farm contributes more to the result than a smaller farm. Without
-culling, the share of birds remaining unaffected averaged
-**`r round(summary$sheltered_bird_survival_pct, 1)`%** at protected farms,
-compared with
-**`r round(summary$unsheltered_bird_survival_pct, 1)`%** at farms without protection.
-The difference was
-**`r round(summary$bird_protection_benefit_percentage_points, 1)` percentage
-points**. With culling, the corresponding averages were
-**`r round(cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
-and **`r round(cull_average_bird_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**.
+The result is relative to bird numbers, not farm numbers. Without culling, the
+expected share of birds lost is
+**`r round(100 - summary$sheltered_bird_survival_pct, 1)`% at protected farms**
+and **`r round(100 - summary$unsheltered_bird_survival_pct, 1)`% at farms without
+protection**. With culling, the expected shares lost fall to
+**`r round(100 - cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
+and **`r round(100 - cull_average_bird_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**,
+respectively. The bars show the matching shares that remain unaffected.
 
 Protection reduces the chance that an outbreak reaches a protected farm. It
 therefore contributes to keeping birds unaffected, but it does not guarantee
