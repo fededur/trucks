@@ -111,9 +111,8 @@ cull_type_loss_comparison <- paste(
 
 <div class="key-findings-title">Key findings</div>
 
-- The report assumes that affected farms receive an early culling response.
-  Under this main planning scenario, the expected national share of birds lost
-  is **`r round(cull_national_loss_pct, 1)`%**, compared with
+- The expected national share of birds lost is
+  **`r round(cull_national_loss_pct, 1)`%**, compared with
   **`r round(mean_loss_share, 1)`%** in the no-response benchmark.
 
 - The remaining loss is similar across production types:
@@ -173,6 +172,11 @@ capacity_reference$`Median per farm` <- thousand_birds(
 ```
 
 ## Around one in five birds remains at risk nationally
+
+The culling response is the main planning case because an affected farm would
+realistically trigger a response. No culling is included only as a benchmark
+to show how much the response changes the outcome. Details of the simulation
+and comparison are in the appendix.
 
 The main planning scenario leaves an expected national loss of
 **`r round(cull_national_loss_pct, 1)`% of birds**.

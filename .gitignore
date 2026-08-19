@@ -17,13 +17,13 @@ packrat/src/
 .DS_Store
 Thumbs.db
 
-# Private operational input data (generated example outputs remain tracked)
-data/trucks_input.csv
-data/farms_input.csv
+# Project data and generated assets
+/data/
+/assets/
 
 # Temporary files
 *.tmp
 *.log
 
 # Rendered reports
-spatial_cascade_report_simple.html
+*.html
