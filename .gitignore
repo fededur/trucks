@@ -24,3 +24,6 @@ data/farms_input.csv
 # Temporary files
 *.tmp
 *.log
+
+# Rendered reports
+spatial_cascade_report_simple.html
