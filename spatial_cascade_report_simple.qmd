@@ -144,6 +144,9 @@ distance and island assumptions can find those details in the appendix.
   making a random start there more likely, while spread between islands is
   blocked.
 
+- No two outbreaks unfold in exactly the same way. Response planning should
+  therefore allow for a range of possible losses, not rely on one estimate.
+
 - These findings can help compare response choices and focus preparedness.
   They should not be read as a forecast of a future outbreak.
 
