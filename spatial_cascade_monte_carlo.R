@@ -557,11 +557,11 @@ survival_data$response <- factor(survival_data$response,
 survival_plot <- ggplot(survival_data, aes(production_type, survival, fill = protection_group)) +
   geom_col(position = position_dodge(.72), width = .66) + geom_text(aes(label = sprintf("%.1f%%", survival)), position = position_dodge(.72), vjust = -.4) +
   facet_wrap(~response, nrow = 1) +
-  scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Protection") +
+  scale_fill_manual(values = c("#3B9AB2", "#F28E2B"), name = "Shelter status") +
   scale_y_continuous(limits = c(0, 100), expand = expansion(c(0, .04)),
                      labels = function(x) paste0(round(x), "%")) +
   labs(title = "Share of birds remaining unaffected",
-       subtitle = "Bird-weighted results by production type and protection level",
+       subtitle = "Bird-weighted results by production type and shelter status",
        x = PRODUCTION_TYPE_LABEL, y = "Birds remaining unaffected (%)") + report_theme +
   theme(legend.position = "top",
         strip.text = element_text(face = "bold", colour = "#173B57", size = 12))

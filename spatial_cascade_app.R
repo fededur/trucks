@@ -612,7 +612,7 @@ server <- function(input, output, session) {
                 position = position_dodge(.72), vjust = -.35, size = 3.5) +
       scale_fill_manual(values = setNames(c("#3B9AB2", "#F28E2B"),
                                           c(SHELTERED_LABEL, UNSHELTERED_LABEL)),
-                        name = "Protection") +
+                        name = "Shelter status") +
       scale_y_continuous(limits = c(0, 100),
                          labels = function(x) paste0(round(x), "%"),
                          expand = expansion(c(0, .06))) +

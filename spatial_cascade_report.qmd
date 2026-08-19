@@ -323,48 +323,33 @@ can carry a larger absolute loss. Production type is used here to describe
 where losses fall; it does not change how spread occurs in the model. Table 1
 provides the detailed production-type percentages and ranges.
 
-## Protection and culling change how many birds remain unaffected
+## Shelter and culling affect how many birds remain unaffected
 
-![Culling increases the expected share of birds remaining unaffected.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Expected share of birds at protected and unprotected farms remaining unaffected by production type and national total, with no culling and with culling"}
+![Culling leaves more birds unaffected at sheltered and unsheltered farms.](assets/spatial_cascade_survival_comparison.svg){#fig-shelter-comparison fig-alt="Share of birds at sheltered and unsheltered farms remaining unaffected by production type and national total, with no culling and with culling"}
 
 ```{=html}
 <div class="figure-note" role="note"><strong>How to read this figure:</strong>
-Each bar answers: out of all birds in this group, what share is expected to
-remain unaffected? In every modelled outbreak, birds at unaffected farms are
-added together and divided by all birds in the same group. The repeated
-outbreaks are then combined into the result shown. This is not an average farm:
-each farm contributes its actual bird count. A bar at 75% means that 75 out of
-every 100 birds in that group are expected to remain unaffected and 25 are
-expected to be lost. “Total” combines production types but keeps protected and
-unprotected birds separate. Birds at culled farms are counted as lost. Compare
-protected and unprotected bars within each management panel.
-<strong>What it means:</strong> The culling panel
-shows a larger share of birds remaining unaffected. Differences between
-protected and unprotected bars also reflect where farms are located, their bird
-numbers and where outbreaks begin; the bars do not measure the effect of
-protection on its own.</div>
+Higher bars mean that a larger share of birds remains unaffected. Eggs and Meat
+show the results for those production types; Total shows them together. The
+left panel has no culling and the right panel includes culling. Birds at culled
+farms are counted as lost. <strong>What it means:</strong> Culling leaves a much
+larger share of birds unaffected. The difference between sheltered and
+unsheltered birds is not the same for Eggs and Meat, so the chart should not be
+read as evidence that shelter alone caused the difference.</div>
 ```
 
-The result is relative to bird numbers, not farm numbers. Without culling, the
-expected share of birds lost is
-**`r round(100 - summary$sheltered_bird_survival_pct, 1)`% at protected farms**
-and **`r round(100 - summary$unsheltered_bird_survival_pct, 1)`% at farms without
-protection**. With culling, the expected shares lost fall to
+Without culling, the share of birds lost is
+**`r round(100 - summary$sheltered_bird_survival_pct, 1)`% at sheltered farms**
+and **`r round(100 - summary$unsheltered_bird_survival_pct, 1)`% at unsheltered
+farms**. With culling, the shares lost fall to
 **`r round(100 - cull_average_bird_survival[[config$scenario_metadata$sheltered_label]], 1)`%**
 and **`r round(100 - cull_average_bird_survival[[config$scenario_metadata$unsheltered_label]], 1)`%**,
-respectively. The bars show the matching shares that remain unaffected.
+respectively. These are shares of birds, not shares of farms.
 
-Protection reduces the chance that an outbreak reaches a protected farm. It
-therefore contributes to keeping birds unaffected, but it does not guarantee
-survival. The final pattern also reflects where protected farms are located,
-their bird numbers, where an outbreak starts and which farms it reaches first.
-This is why the apparent protection benefit can differ between production
-types.
-
-The bars describe the final bird outcomes for the farms currently in each
-group; they do not measure the effect of protection on its own. A paired test
-that changes only protection, while holding the same farms and outbreaks
-fixed, would be needed to isolate that effect.
+Shelter lowers the chance that a farm is reached in the model. However, the
+bars also reflect where sheltered farms are located, how many birds they hold
+and where outbreaks begin. This helps explain why the shelter pattern differs
+between Eggs and Meat. The appendix explains how these shares are calculated.
 
 ## Some farming areas are exposed more often than others
 
@@ -509,6 +494,23 @@ farms are identified for response** and are culled
 daily cap. All birds at a
 culled farm count as a direct loss, while the farm stops contributing to later
 spread.
+
+## How the bird shares are calculated
+
+The main loss and survival results are based on bird numbers. For each modelled
+outbreak, the analysis adds the birds at farms that are lost and divides that
+number by all birds in the same group. The share remaining unaffected is 100%
+minus the share lost. Birds at culled farms are included in the loss.
+
+Groups are kept separate. For example, the Eggs–Sheltered result uses birds at
+sheltered egg farms only. The Total–Sheltered result combines Eggs and Meat but
+still uses sheltered farms only. The same calculation is repeated for
+unsheltered farms and for each management response.
+
+The final percentage combines the results from the repeated outbreaks. It is
+not an average farm result: each farm contributes according to the number of
+birds it holds. Farm counts are reported separately where they are useful for
+response planning.
 
 ## Timing and distance
 
