@@ -126,8 +126,9 @@ appendix.
 - Without culling, an outbreak could cause widespread bird losses across New
   Zealand.
 
-- With early culling, the expected national share of birds lost is
-  **`r round(cull_national_loss_pct, 1)`%** under the current settings.
+- Acting early through culling could limit the expected national share of birds
+  lost to **`r round(cull_national_loss_pct, 1)`%**, compared with
+  **`r round(mean_loss_share, 1)`% without culling**, under the current settings.
 
 - No two outbreaks unfold in exactly the same way. Response planning should
   therefore allow for a range of possible losses, not rely on one estimate.
